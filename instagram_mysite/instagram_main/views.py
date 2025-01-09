@@ -10,6 +10,9 @@ from .models import User
 from .utils import validate_contact_info  # Import funkcije za validaciju
 from django.contrib.auth.hashers import check_password
 
+from django.db.models import Q
+from django.views.generic import DetailView
+
 
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
@@ -118,3 +121,68 @@ def login_user2(request):
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 
+# ZA 2. PRAKTIČNI ZADATAK
+# http://localhost:3000/users na ovom linku se prikazuje
+def list_users(request):
+    """
+    Dohvati popis korisnika s opcijom filtriranja prema username i datumu.
+    """
+    if request.method == 'GET':
+        # Dohvati query parametre
+        username = request.GET.get('username', None)
+        created_at = request.GET.get('created_at', None)
+
+        # Filtriraj korisnike
+        users = User.objects.all()
+        if username:
+            users = users.filter(username__icontains=username)
+        if created_at:
+            users = users.filter(created_at__date=created_at)
+
+        # Konvertiraj u JSON format
+        user_list = list(users.values('id', 'username', 'contact_info', 'full_name', 'created_at'))
+        return JsonResponse({'users': user_list})
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+class UserDetailView(DetailView):
+    model = User
+    pk_url_kwarg = 'pk'  # Primarni ključ iz URL-a
+    context_object_name = 'user'  # Objekt koji se prosljeđuje u template
+    template_name = None  # Nema template jer vraćamo JSON odgovor
+
+    def render_to_response(self, context, **response_kwargs):
+        user = context['user']
+        # Pretvaramo korisnika u JSON format
+        data = {
+            'id': user.id,
+            'username': user.username,
+            'contact_info': user.contact_info,
+            'full_name': user.full_name,
+            'created_at': user.created_at,
+            'updated_at': user.updated_at,
+        }
+        return JsonResponse(data)
+
+
+@csrf_exempt
+def delete_user(request):
+    """
+    Endpoint za brisanje korisnika iz baze.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+
+            # Provjeri postoji li korisnik
+            user = User.objects.get(id=user_id)
+            user.delete()  # Obriši korisnika
+
+            return JsonResponse({'success': True, 'message': 'User deleted successfully'})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User does not exist'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
