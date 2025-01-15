@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'instagram_main.apps.InstagramMainConfig',
     'corsheaders',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [

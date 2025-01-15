@@ -37,6 +37,9 @@ def check_user_exists(request):
 
 @csrf_exempt
 def register_user(request):
+    """
+    Endpoint za registraciju korisnika.
+    """
     if request.method == 'POST':
         try:
             data = json.loads(request.body)  # Preuzmi JSON podatke iz zahtjeva
@@ -54,12 +57,22 @@ def register_user(request):
                 contact_info=contact_info,
                 full_name=full_name,
                 password=password,
+                posts=0,     
+                followers=0,   
+                following=0  
             )
-            return JsonResponse({'success': True, 'message': 'User registered successfully'})
+
+            # Spremi user_id u sesiju
+            request.session['user_id'] = user.id
+
+            return JsonResponse({'success': True, 'message': 'Korisnik uspješno registriran'})
         except ValidationError as e:
             return JsonResponse({'success': False, 'error': str(e)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': 'Server error: ' + str(e)})
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
 
 
 
@@ -74,11 +87,12 @@ def login_user(request):
         password = data.get('password')
 
         try:
-            # Dohvati korisnika prema kontakt informacijama (email ili broj mobitela)
+            # Dohvati korisnika prema kontakt informacijama
             user = User.objects.get(contact_info=contact_info)
 
-            # Provjeri da li unijeta lozinka odgovara pohranjenoj lozinci (u čistom tekstu)
+            # Provjeri da li unijeta lozinka odgovara pohranjenoj lozinci
             if user.password == password:
+                request.session['user_id'] = user.id  # Spremljen user_id u sesiju
                 return JsonResponse({'success': True, 'message': 'Logiranje uspješno'})
             else:
                 return JsonResponse({'success': False, 'message': 'Pogrešna lozinka'})
@@ -87,6 +101,33 @@ def login_user(request):
             return JsonResponse({'success': False, 'message': 'Korisnik ne postoji. Molimo, registrirajte se.'})
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+
+@csrf_exempt
+def get_user_profile(request):
+    """
+    Endpoint za dohvaćanje podataka o logiranom korisniku.
+    """
+    if request.method == 'GET':
+        user_id = request.session.get('user_id')  # Pretpostavka: Korisnički ID je spremljen u sesiji
+        if not user_id:
+            return JsonResponse({'error': 'Korisnik nije logiran.'}, status=401)
+
+        try:
+            user = User.objects.get(id=user_id)
+            return JsonResponse({
+                'success': True,
+                'username': user.username,
+                'email': user.contact_info,
+                'posts': user.posts,  # Dodano: Broj objava
+                'followers': user.followers,  # Dodano: Broj pratitelja
+                'following': user.following,  # Dodano: Broj praćenja
+            })
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Korisnik nije pronađen.'}, status=404)
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
 
 @csrf_exempt
 def login_user2(request):
@@ -109,8 +150,9 @@ def login_user2(request):
             else:
                 return JsonResponse({'success': False, 'message': 'Korisnik ne postoji. Molimo, registrirajte se.'})
 
-            # Provjeri da li unijeta lozinka odgovara pohranjenoj lozinci (u čistom tekstu)
+            # Provjeri da li unijeta lozinka odgovara pohranjenoj lozinci
             if user.password == password:
+                request.session['user_id'] = user.id  # Spremljen user_id u sesiju
                 return JsonResponse({'success': True, 'message': 'Logiranje uspješno'})
             else:
                 return JsonResponse({'success': False, 'message': 'Pogrešna lozinka'})
@@ -119,6 +161,7 @@ def login_user2(request):
             return JsonResponse({'success': False, 'message': 'Korisnik ne postoji. Molimo, registrirajte se.'})
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
 
 
 # ZA 2. PRAKTIČNI ZADATAK
