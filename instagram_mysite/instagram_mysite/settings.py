@@ -54,11 +54,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
 ]
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
 
 CORS_ALLOW_ALL_ORIGINS = True  
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  
+]
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:3000",  
 ]
 
 
@@ -140,3 +145,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'instagram_react/build/static')
 ]
+# Osiguraj da sesije koriste HTTP-only kolačiće
+SESSION_COOKIE_HTTPONLY = True
+
+# Omogući sigurnosne sesije (ako koristiš HTTPS)
+SESSION_COOKIE_SECURE = False  # Stavi True za HTTPS
+
+# Postavi trajanje sesije (ako je potrebno)
+SESSION_COOKIE_AGE = 3600  # Vrijeme trajanja sesije u sekundama (1 sat)
+
+# Koristi CSRF zaštitu
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SECURE = False  # Stavi True za HTTPS

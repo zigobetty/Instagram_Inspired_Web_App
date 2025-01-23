@@ -6,6 +6,8 @@ class User(models.Model):
     full_name = models.CharField(max_length=100)
     password = models.CharField(max_length=128)  
     posts = models.IntegerField(default=0)  # Dodano polje za broj objava
+    unique_id = models.CharField(max_length=255, unique=True, null=True)  # Novi atribut za jedinstveni ID
+
     followers = models.IntegerField(default=0)  # Dodano polje za broj pratitelja
     following = models.IntegerField(default=0)  # Dodano polje za broj praćenja
     created_at = models.DateTimeField(auto_now_add=True)

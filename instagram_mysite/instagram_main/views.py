@@ -12,7 +12,17 @@ from django.contrib.auth.hashers import check_password
 
 from django.db.models import Q
 from django.views.generic import DetailView
+import uuid
+from django.core.exceptions import ValidationError
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
+def generate_unique_id():
+    """
+    Funkcija koja generira jedinstveni ID za korisnika.
+    """
+    return str(uuid.uuid4())  # Generira jedinstveni UUID
 
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
@@ -48,8 +58,11 @@ def register_user(request):
             full_name = data.get('full_name')
             password = data.get('password')
 
-            # Provjeri validnost kontakta
+            # Provjeri validnost kontakta (pretpostavljamo da postoji funkcija validate_contact_info)
             contact_type = validate_contact_info(contact_info)
+
+            # Generiraj jedinstveni ID
+            unique_id = generate_unique_id()
 
             # Kreiraj novog korisnika
             user = User.objects.create(
@@ -57,6 +70,7 @@ def register_user(request):
                 contact_info=contact_info,
                 full_name=full_name,
                 password=password,
+                unique_id=unique_id,  # Spremi jedinstveni ID u bazu
                 posts=0,     
                 followers=0,   
                 following=0  
@@ -87,20 +101,29 @@ def login_user(request):
         password = data.get('password')
 
         try:
-            # Dohvati korisnika prema kontakt informacijama
-            user = User.objects.get(contact_info=contact_info)
+            user = None
+            # Pronađi korisnika prema contact_info ili username
+            if User.objects.filter(contact_info=contact_info).exists():
+                user = User.objects.get(contact_info=contact_info)
+            elif User.objects.filter(username=contact_info).exists():
+                user = User.objects.get(username=contact_info)
 
-            # Provjeri da li unijeta lozinka odgovara pohranjenoj lozinci
+            if not user:
+                return JsonResponse({'success': False, 'message': 'Korisnik ne postoji. Molimo registrirajte se.'})
+
+            # Provjeri lozinku
             if user.password == password:
-                request.session['user_id'] = user.id  # Spremljen user_id u sesiju
-                return JsonResponse({'success': True, 'message': 'Logiranje uspješno'})
+                # Spremi user_id u sesiju
+                request.session['user_id'] = user.id
+                print(f"[LOGIN] Sesija postavljena za user_id: {user.id}")  # Logiraj user_id
+                return JsonResponse({'success': True, 'message': 'Logiranje uspješno', 'user_id': user.id})
             else:
                 return JsonResponse({'success': False, 'message': 'Pogrešna lozinka'})
+        except Exception as e:
+            print(f"[LOGIN] Greška: {str(e)}")  # Logiraj grešku
+            return JsonResponse({'success': False, 'message': 'Došlo je do greške.'})
 
-        except User.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Korisnik ne postoji. Molimo, registrirajte se.'})
-
-    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=400)
 
 
 @csrf_exempt
@@ -109,24 +132,36 @@ def get_user_profile(request):
     Endpoint za dohvaćanje podataka o logiranom korisniku.
     """
     if request.method == 'GET':
-        user_id = request.session.get('user_id')  # Pretpostavka: Korisnički ID je spremljen u sesiji
+        user_id = request.session.get('user_id')
+        print(f"[PROFILE] Dohvaćen user_id iz sesije: {user_id}")  # Logiraj user_id
         if not user_id:
-            return JsonResponse({'error': 'Korisnik nije logiran.'}, status=401)
+            return JsonResponse({'success': False, 'error': 'Korisnik nije logiran.'}, status=401)
 
         try:
             user = User.objects.get(id=user_id)
+            print(f"[PROFILE] Korisnik pronađen: {user.username}")  # Logiraj username korisnika
             return JsonResponse({
                 'success': True,
-                'username': user.username,
-                'email': user.contact_info,
-                'posts': user.posts,  # Dodano: Broj objava
-                'followers': user.followers,  # Dodano: Broj pratitelja
-                'following': user.following,  # Dodano: Broj praćenja
+                'data': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.contact_info,
+                    'full_name': user.full_name,
+                    'posts': user.posts,
+                    'followers': user.followers,
+                    'following': user.following,
+                }
             })
         except User.DoesNotExist:
-            return JsonResponse({'error': 'Korisnik nije pronađen.'}, status=404)
+            print(f"[PROFILE] Korisnik s ID-om {user_id} nije pronađen.")  # Logiraj grešku
+            return JsonResponse({'success': False, 'error': 'Korisnik nije pronađen.'}, status=404)
 
-    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=400)
+
+
+
+
+
 
 
 @csrf_exempt
