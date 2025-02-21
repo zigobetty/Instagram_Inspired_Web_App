@@ -153,7 +153,19 @@ SESSION_COOKIE_SECURE = False  # Stavi True za HTTPS
 
 # Postavi trajanje sesije (ako je potrebno)
 SESSION_COOKIE_AGE = 3600  # Vrijeme trajanja sesije u sekundama (1 sat)
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 # Koristi CSRF zaštitu
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SECURE = False  # Stavi True za HTTPS
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Ovo osigurava da Django servira medijske datoteke u development modu
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type("image/jpeg", ".jpg", True)
+    mimetypes.add_type("image/png", ".png", True)
+

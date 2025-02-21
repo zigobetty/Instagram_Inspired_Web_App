@@ -1,0 +1,96 @@
+.homeSidebar-header {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    align-items: center;
+}
+
+h2.forYou-text {
+    font-size: 1.3em !important;
+    letter-spacing: 0.02em;
+    opacity: 0.3;
+}
+
+h2.following-text {
+    font-size: 1.3em !important;
+    letter-spacing: 0.02em;
+    opacity: 0.3;
+
+}
+
+.line {
+    height: 0.1em;
+    width: 53em;
+    background-color: #999;
+    opacity: 0.35;
+    max-width: 53em;
+
+}
+
+.forYou-text.active,
+.following-text.active {
+    font-weight: bold;
+    opacity: 1 !important;
+}
+.forYou-container{
+    border: 1px solid red;
+    margin-top: 2.1em;
+    width: 53em;
+    max-width: 53em;
+
+}
+.main-story-container{
+    overflow: hidden; 
+    /* border: 1px solid red; */
+    width: 53em;
+    max-width: 53em;
+    margin-top: 2em;
+    margin-left: 0.5em;
+  }
+.outer-circle {
+    width: 80px; /* Veličina vanjskog kruga */
+    height: 80px; /* Veličina vanjskog kruga */
+    border-radius: 50%; /* Zaobljeni rubovi za krug */
+    background: linear-gradient(135deg, #f8c74d, #f74eb2, #9b59b6); /* Instagramov gradijent */
+    padding: 6px; /* Bijeli prostor između kruga i slike */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative; /* Potrebno za pozicioniranje srednjeg kruga */
+}
+
+/* Srednji bijeli krug između vanjskog i unutarnjeg kruga */
+.middle-circle {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    /* background-color: white; */
+    position: absolute;
+    background: transparent;
+    border: 2px solid white;
+}
+
+/* Unutarnji krug sa slikom */
+.story-container {
+    width: 70px; /* Povećajte veličinu unutarnjeg kruga */
+    height: 70px; /* Povećajte veličinu unutarnjeg kruga */
+    border-radius: 50%; /* Zaobljeni rubovi za krug */
+    background-color: white;
+    overflow: hidden; /* Skriva sve što izlazi izvan kruga */
+}
+
+/* Slika unutar manjeg kruga */
+.story-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Održava omjer slike bez deformiranja */
+}
+
+/* Aktivni story stil */
+.outer-circle.active {
+    box-shadow: 0 0 10px rgba(29, 161, 242, 0.6); /* Sjena oko aktivnog storyja */
+}
+
+
+  

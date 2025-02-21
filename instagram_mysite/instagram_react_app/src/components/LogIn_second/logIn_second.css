@@ -1,0 +1,52 @@
+.logInSecond-container-data{
+    border:0.5px solid rgb(179, 176, 176);
+    width: 33rem;
+    height: 85%;
+}
+.text5-container-logInSecond{
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    flex-direction: column;
+    margin-top: 0em;
+    color: gray;
+}
+.data-container-logInSecond{
+    margin-top: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.6em;
+}
+
+.button-secondLogIn-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2em;
+}
+
+.button-secondLogIn{
+    background-color: #4cb5f9;
+    width: 24em;
+    height: 2.5em;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    margin-top: 0;
+
+}
+
+.line-container-2{
+    margin-top: 2em;
+}
+
+/* Provjerite da li postoji neki CSS koji dodaje sadržaj u input polje */
+.input-wrapper::before,
+.input-wrapper::after {
+  /* Provjerite da li postoji sadržaj koji dodaje ikonu */
+  content: none; /* Ako postoji, postavite na 'none' */
+}
