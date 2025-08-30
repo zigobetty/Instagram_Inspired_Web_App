@@ -12,6 +12,17 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from datetime import timedelta
+import sqlite3
+from django.db.backends.signals import connection_created
+from django.dispatch import receiver
+
+@receiver(connection_created)
+def enforce_foreign_keys(sender, connection, **kwargs):
+    if isinstance(connection.connection, sqlite3.Connection):
+        cursor = connection.cursor()
+        cursor.execute('PRAGMA foreign_keys=ON;')
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +39,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Base URL for generating full URLs (used in WebSocket consumers)
+BASE_URL = 'http://localhost:8000'
+
 
 # Application definition
 
@@ -41,6 +55,9 @@ INSTALLED_APPS = [
     'instagram_main.apps.InstagramMainConfig',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -55,16 +72,31 @@ MIDDLEWARE = [
     
 ]
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=6),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
+AUTH_USER_MODEL = 'instagram_main.User'
 
 
-CORS_ALLOW_ALL_ORIGINS = True  
-CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  
+    'http://localhost:3000',
 ]
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",  
-]
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
 
 
 ROOT_URLCONF = 'instagram_mysite.urls'
@@ -72,9 +104,7 @@ ROOT_URLCONF = 'instagram_mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(BASE_DIR, 'instagram_react/build')
-        ],
+        'DIRS': [os.path.join(BASE_DIR, 'instagram_react_app', 'build')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -125,7 +155,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Zagreb'
 
 USE_I18N = True
 
@@ -143,29 +173,48 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'instagram_react/build/static')
+    os.path.join(BASE_DIR, 'instagram_react_app', 'build', 'static')
 ]
-# Osiguraj da sesije koriste HTTP-only kolačiće
+
+# Sesija koristi HTTP-only kolačiće
 SESSION_COOKIE_HTTPONLY = True
 
-# Omogući sigurnosne sesije (ako koristiš HTTPS)
-SESSION_COOKIE_SECURE = False  # Stavi True za HTTPS
+# OVo su sigurnosne postavke za sesiju
+SESSION_COOKIE_SECURE = False  
 
-# Postavi trajanje sesije (ako je potrebno)
-SESSION_COOKIE_AGE = 3600  # Vrijeme trajanja sesije u sekundama (1 sat)
+SESSION_COOKIE_AGE = 3600  # Vrijeme trajanja sesije u
 SESSION_SAVE_EVERY_REQUEST = True
 
 
-# Koristi CSRF zaštitu
-CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SECURE = False  # Stavi True za HTTPS
+# CSRF - za zaštitu
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False  
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+
 
 # Ovo osigurava da Django servira medijske datoteke u development modu
 if DEBUG:
     import mimetypes
     mimetypes.add_type("image/jpeg", ".jpg", True)
     mimetypes.add_type("image/png", ".png", True)
+
+# Channels Configuration
+ASGI_APPLICATION = 'instagram_mysite.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+
 

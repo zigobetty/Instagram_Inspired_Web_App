@@ -1,13 +1,14 @@
-import React from "react";
-import "primereact/resources/themes/saga-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import InstagramLoading from "./components/InstagramLoading/InstagramLoading";
 import Login from "./components/LogIn/logIn";
-import SignIn from "./components/SignIn/signIn";
 import LogInSecond from "./components/LogIn_second/logIn_second";
-import ListUsers from "./components/ListUsers";
-import UserDetail from "./components/UserDetail";
+import SignIn from "./components/SignIn/signIn";
 import Home from "./components/Home/Home";
 import HomeSidebar from "./components/HomeSidebar/HomeSidebar";
 import SearchSidebar from "./components/SearchSidebar/SearchSidebar";
@@ -18,41 +19,55 @@ import CreateSidebar from "./components/CreateSidebar/CreateSidebar";
 import ProfileSidebar from "./components/ProfileSidebar/ProfileSidebar";
 import ThreadsSidebar from "./components/ThreadsSidebar/ThreadsSidebar";
 import NotificationsSidebar from "./components/NotificationsSidebar/NotificationsSidebar";
-import "primereact/resources/themes/lara-light-blue/theme.css"; // Ispravan import
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
-import { UserProvider } from "./components/UserContext";
-
-
+import ListUsers from "./components/ListUsers";
+import UserDetail from "./components/UserDetail";
+import UserProfile from "./components/UserProfile/UserProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+  const [showLoading, setShowLoading] = useState(true);
+
+  useEffect(() => {
+    // Prikaži loading ekran na početku
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showLoading) {
+    return <InstagramLoading />;
+  }
+
   return (
-    <UserProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/signup" element={<SignIn />} />
-            <Route path="/login" element={<LogInSecond />} />
-            <Route path="/home" element={<ProtectedRoute element={<Home />} />}>
-              <Route index element={<HomeSidebar />} />{" "}
-              {/* Defaultni sadržaj */}
-              <Route path="search" element={<SearchSidebar />} />
-              <Route path="explore" element={<ExploreSidebar />} />
-              <Route path="reels" element={<ReelsSidebar />} />
-              <Route path="messages" element={<MessagesSidebar />} />
-              <Route path="notifications" element={<NotificationsSidebar />} />
-              <Route path="create" element={<CreateSidebar />} />
-              <Route path="profile" element={<ProfileSidebar />} />
-              <Route path="threads" element={<ThreadsSidebar />} />
-            </Route>
-            <Route path="/users" element={<ListUsers />} />
-            <Route path="/users/:id" element={<UserDetail />} />
-          </Routes>
-        </div>
-      </Router>
-    </UserProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/main_login" />} />{" "}
+        <Route path="/main_login" element={<Login />} />
+        <Route path="/login" element={<LogInSecond />} />
+        <Route path="/signup" element={<SignIn />} />
+        {/* PROTECTED HOME */}
+        <Route path="/home" element={<ProtectedRoute />}>
+          <Route element={<Home />}>
+            <Route index element={<HomeSidebar />} />
+            <Route path="dashboard" element={<HomeSidebar />} />
+            <Route path="search" element={<SearchSidebar />} />
+            <Route path="explore" element={<ExploreSidebar />} />
+            <Route path="reels" element={<ReelsSidebar />} />
+            <Route path="messages" element={<MessagesSidebar />} />
+            <Route path="notifications" element={<NotificationsSidebar />} />
+            <Route path="create" element={<CreateSidebar />} />
+            <Route path="profile" element={<ProfileSidebar />} />
+            <Route path="threads" element={<ThreadsSidebar />} />
+            <Route path="users/:userId/profile" element={<UserProfile />} />
+          </Route>
+        </Route>
+        <Route path="/users" element={<ListUsers />} />
+        <Route path="/users/:id" element={<UserDetail />} />
+        <Route path="*" element={<Navigate to="/main_login" />} />
+      </Routes>
+    </Router>
   );
 }
 

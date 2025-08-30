@@ -2,20 +2,36 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-left: -37em;
+    margin-left: 0em;
+    width: 100%;
+    max-width: 100%;
     flex-direction: column;
 }
 
+/* Klasični spinner */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .header-profile-container {
-    /* border: 1px solid red; */
+    width: 80% !important;
     display: flex;
-    justify-content: center;
+    justify-content: start;
     align-items: center;
     flex-direction: row;
     width: fit-content;
     gap: 5em;
-    margin-left: 14em;
-    margin-top: 3em;
+    margin-top: 1em;
 }
 
 .left-header-container {
@@ -31,10 +47,18 @@
     overflow: hidden;
 }
 
+.story-container-create {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #E0E0E0;
+    overflow: hidden;
+}
+
 .outer-circle-profile {
-    width: 220px;
+    width: 165px;
     /* Veličina vanjskog kruga */
-    height: 220px;
+    height: 165px;
     /* Veličina vanjskog kruga */
     border-radius: 50%;
     /* Zaobljeni rubovi za krug */
@@ -47,13 +71,11 @@
     align-items: center;
     cursor: pointer;
     position: relative;
-    /* Potrebno za pozicioniranje srednjeg kruga */
 }
 
-/* Srednji bijeli krug između vanjskog i unutarnjeg kruga */
 .middle-circle-profile {
-    width: 215px;
-    height: 215px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     /* background-color: white; */
     position: absolute;
@@ -61,94 +83,96 @@
     border: 5px solid white;
 }
 
-/* Unutarnji krug sa slikom */
 .story-container-profile {
-    width: 210px;
-    /* Povećajte veličinu unutarnjeg kruga */
-    height: 210px;
-    /* Povećajte veličinu unutarnjeg kruga */
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
-    /* Zaobljeni rubovi za krug */
     background-color: white;
     overflow: hidden;
-    /* Skriva sve što izlazi izvan kruga */
 }
 
-/* Slika unutar manjeg kruga */
 .story-container-profile img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* Održava omjer slike bez deformiranja */
 }
 
-/* Aktivni story stil */
 .outer-circle-profile.active {
     box-shadow: 0 0 10px rgba(29, 161, 242, 0.6);
-    /* Sjena oko aktivnog storyja */
 }
 
 .line-profile {
     height: 0.1em;
-    width: 76em;
+    width: 100%;
     background-color: transparent;
     opacity: 0.9;
     max-width: 76em;
-    margin-left: 26em;
-    margin-top: 3.5em;
+    margin-top: 0em;
 }
 
 .right-inner-header-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.5em;
+    gap: 0.7em;
 }
 
 .right-inner-middle-container {
     display: flex;
     justify-content: start;
     align-items: center;
-    gap: 3.7em;
+    gap: 2.7em;
 
 }
 
 .username-profile-text {
-    font-size: 1.4em;
+    font-size: 20px;
     letter-spacing: 0.05em;
 }
 
 .middle-profile-text {
-    font-size: 1.2em;
+    font-size: 16px;
     letter-spacing: 0.05em;
 }
 
 .bottom-profile-text {
-    font-size: 1.05em;
+    font-size: 14px;
     letter-spacing: 0.05em;
 }
 
 .editProfile-button {
-    background-color: #efeeee !important;
+    background-color: #F0F2F5 !important;
     color: black;
     border: none;
     font-weight: 600;
     border-radius: 7px;
-    width: 9em;
-    height: 2.5em;
-    font-size: 1.1em;
+    width: 101px;
+    height: 32px;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    padding: 0px;
+}
+
+.editProfile-button2 {
+    background-color: #F0F2F5 !important;
+    color: black;
+    border: none;
+    font-weight: 600;
+    border-radius: 7px;
+    width: 111px;
+    height: 32px;
+    font-size: 13px;
+    padding: 0px;
     letter-spacing: 0.02em;
 }
 
-.editProfile-button:hover {
-    background-color: #c0bdbd !important;
+.editProfile-button:hover,
+.editProfile-button2:hover {
+    background-color: #d7d4d4 !important;
     color: black;
     cursor: pointer;
 }
 
-.settings-icon-profile {
-    width: 2em;
-}
 
 .tooltip-container {
     position: relative;
@@ -178,21 +202,24 @@
 }
 
 .main-story-container-story-profile {
-    /* border: 1px solid red; */
-    margin-top: 3em;
-    margin-left: -35.5em;
+    margin-top: 2em;
     width: fit-content;
+    width: 85%;
+    display: flex;
 }
 
 .storyText-container {
     display: flex;
-    justify-content: center;
+    justify-content: start;
+    font-size: 12px;
+    font-weight: 600;
+
 }
 
 .outer-circle-story-profile {
-    width: 100px;
+    width: 82px;
     /* Veličina vanjskog kruga */
-    height: 100px;
+    height: 82px;
     /* Veličina vanjskog kruga */
     border-radius: 50%;
     /* Zaobljeni rubovi za krug */
@@ -205,13 +232,11 @@
     align-items: center;
     cursor: pointer;
     position: relative;
-    /* Potrebno za pozicioniranje srednjeg kruga */
 }
 
-/* Srednji bijeli krug između vanjskog i unutarnjeg kruga */
 .middle-circle-story-profile {
-    width: 95px;
-    height: 95px;
+    width: 77px;
+    height: 77px;
     border-radius: 50%;
     /* background-color: white; */
     position: absolute;
@@ -219,43 +244,38 @@
     border: 2px solid white;
 }
 
-/* Unutarnji krug sa slikom */
 .story-container-story-profile {
-    width: 90px;
-    /* Povećajte veličinu unutarnjeg kruga */
-    height: 90px;
-    /* Povećajte veličinu unutarnjeg kruga */
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    /* Zaobljeni rubovi za krug */
     background-color: #f1f1f1;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Skriva sve što izlazi izvan kruga */
 }
 
-/* Slika unutar manjeg kruga */
 .story-container-story-profile img {
     width: 50%;
     height: 50%;
     object-fit: cover;
-    /* Održava omjer slike bez deformiranja */
 }
 
-/* Aktivni story stil */
 .outer-circle.active-story-profile {
     box-shadow: 0 0 10px rgba(29, 161, 242, 0.6);
-    /* Sjena oko aktivnog storyja */
 }
 
 ul.p-tabmenu-nav.p-reset {
     background-color: transparent !important;
-    gap: 3em;
-    margin-top: -1em;
+    margin-top: 1em;
     display: flex;
+    gap: 9em;
+    border: none !important;
     justify-content: center;
     align-items: center;
+    width: 91% !important;
+    padding-left: 2em;
+    /* background: red !important; */
 }
 
 a.p-menuitem-link {
@@ -271,8 +291,8 @@ a.p-menuitem-link {
 .noPhoto-container {
     /* border: 1px solid red; */
     display: flex;
-    width: 75em;
-    max-width: 75em;
+    width: 94.5%;
+    max-width: 100%;
     margin-top: 5em;
     justify-content: center;
     align-items: center;
@@ -284,65 +304,84 @@ a.p-menuitem-link {
 }
 
 .noPosts-text {
-    font-size: 2em;
+    font-size: 30px;
     font-weight: 800;
+}
+
+.user-images-wrapper {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    margin-top: -0.05em;
+
 }
 
 .user-images-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    /* Tačno 3 slike u retku */
-    gap: 1em;
-    justify-content: center;
-    padding: 10px;
-    /* border: 1px solid red; */
-    margin-top: 1.5em;
+    gap: 0;
+    width: 100%;
+    margin-top: 0;
+    padding: 0;
+    box-sizing: border-box;
+    padding-right: 6em !important;
+    padding-left: 2em !important;
+    padding-bottom: 2em !important;
 }
 
 .user-image {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    background: #fff;
+    border: 1px solid #fff;
 }
 
 .uploaded-image {
     width: 100%;
-    height: 14em;
+    aspect-ratio: 4 / 5;
     object-fit: cover;
-    cursor: pointer;
-
+    display: block;
 }
 
-.custom-dialog {
-    left: 7em;
-    top: -4em;
-}
+
 
 .custom-dialog.p-dialog .p-dialog-content {
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-    width: 38em !important;
-    margin-top: -2em;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    width: 35em !important;
+    padding: 0;
+    background: white;
 }
 
-/* .p-dialog-draggable .p-dialog-header {
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-    width: 38em !important;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-top: 2.5em;
-    text-align: center;
-} */
+.custom-dialog.p-dialog {
+    border-radius: 4px;
+    overflow: hidden;
+}
+
 
 .custom-dialog.p-dialog .p-dialog-header .p-dialog-title {
     font-weight: 400;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     text-align: center;
     color: black !important;
-    margin-top: -1em;
-    padding-left: 1em;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.custom-dialog .p-dialog-header .p-dialog-header-icon:last-child {
+    display: none;
+}
+
+.custom-dialog .p-dialog-header {
+    text-align: center;
+    border-bottom: none;
+    background: white;
+}
+
+.custom-dialog .p-dialog-header .p-dialog-title {
+    margin: 0 auto;
+    width: 100%;
 }
 
 .custom-dialog .dialog-content {
@@ -350,42 +389,78 @@ a.p-menuitem-link {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding-top: 1em;
+    padding: 0;
+    border-radius: 4px;
+}
+
+.custom-dialog .dialog-content>div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.custom-dialog .dialog-content .dialog-divider:first-child {
+    margin-top: 0;
 }
 
 .dialog-divider {
-    height: 1px;
-    background-color: #e0e0e0;
-    /* Svjetlija siva */
-    margin: 8px 0;
+    height: 0.5px;
+    background-color: #dbdbdb;
+    margin: 0;
     width: 100%;
 }
 
 .dialog-divider-second {
     height: 1px;
     background-color: #dedada;
-    /* Svjetlija siva */
+    flex: 0 0 auto;
     margin: 8px 0;
+
     width: 100%;
 }
 
 .dialog-text-upload {
-    color: #0095f6;
+    color: #4A5DF9;
     font-size: 1.2em;
     font-weight: 600;
 }
 
 .dialog-text-remove {
     color: #ed4956;
-    font-size: 1.2em;
+    font-size: 20px;
     font-weight: 600;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    height: 3.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
 }
+
+
 
 .dialog-text-cancel {
     color: black;
-    font-size: 1.2em;
+    font-size: 20px;
     font-weight: 400;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    height: 3.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
 }
+
+
 
 .uploadProfilePic-cont {
     background-color: red;
@@ -395,9 +470,21 @@ a.p-menuitem-link {
     border: none;
     background-color: transparent;
     color: #0095f6;
-    font-size: 1.2em;
+    font-size: 20px;
     font-weight: 600;
     height: 3.5em;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: background-color 0.2s ease;
+}
+
+
+
+.custom-uploadPhoto-btn:focus {
+    display: none;
 }
 
 .custom-uploadPhoto-btn .p-button-icon-left {
@@ -409,35 +496,39 @@ a.p-menuitem-link {
     display: flex;
     justify-content: center;
     align-items: stretch;
-    width: 84em;
-    /* Povećava širinu dijaloga */
+    flex-direction: column;
+    height: 100vh;
+    width: 60em;
     padding: 0;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 .image-dialog-container {
     display: flex;
     width: 100%;
     height: 85vh;
-    /* Visina ekrana */
     max-height: 90vh;
-    /* Sprečava previše veliko širenje */
+    flex: 1;
 }
 
 .left-image-container {
     flex: 1.2;
-    /* Lijeva strana zauzima 1.2x više prostora */
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: black;
     position: relative;
     max-height: 90vh;
+    min-width: 0;
 }
 
 .right-empty-container {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     background-color: white;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .full-image {
@@ -445,67 +536,76 @@ a.p-menuitem-link {
     height: 100%;
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
-    /* Sprečava iskrivljenje */
+    object-fit: cover;
     display: block;
 }
 
 .custom-image-dialog .p-dialog-header {
     width: 84em !important;
-    /* Postavlja širinu headera na 84em */
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     display: none;
 }
 
 .header_post_container {
-    /* border: 1px solid red; */
+    flex: 0 0 auto;
     margin-top: 1em;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* width: 100%; */
     margin-left: 1em;
 
 
 }
 
 .profile_picture_header_post_container {
-    /* background-color: pink; */
-    width: 10em;
+    display: flex;
+    align-items: start;
+    gap: 0.5em;
+}
+
+.right-container-username_second {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    align-items: start;
+    gap: 0.2em;
 
 }
 
 .morePic {
-    width: 1.4em;
+    width: 1em;
     margin-right: 2em;
 }
 
 .post-location-text {
-    font-size: 0.95em;
-    font-weight: 500;
-    margin-left: 4.7em;
-    letter-spacing: 0.03em;
-    font-family: "Montserrat", serif;
+    font-size: 12px !important;
+    margin-top: -1.3em;
     color: black;
-    padding-top: -3em !important;
-    margin-top: -1.2em;
+    font-weight: 400;
+}
+
+.create-username-text {
+    margin-top: 0.8em;
+    font-size: 14px;
 }
 
 
 .main_post_container {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: start;
     margin-top: 1.3em;
-    height: 34em;
-    overflow-y: auto; /* Scroll vertikalno kad sadržaj prelazi 34em */
-  }
-  
+    height: auto;
+    overflow-y: auto !important;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 
 .profile_picture_main_post_container {
     /* background-color: pink; */
-    width: 10em;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -513,15 +613,15 @@ a.p-menuitem-link {
 
 }
 
-/* .footer_post_container {
-    border: 1px solid green;
-
-} */
+.footer_post_container {
+    flex: 0 0 auto;
+}
 
 .custom-more-dialog .p-dialog-content {
     padding: 0;
-    border-radius: 12px;
-    width: 35em;
+    border-radius: 25px;
+    width: 25em;
+    overflow: hidden;
 
 }
 
@@ -533,13 +633,11 @@ a.p-menuitem-link {
     display: flex;
     flex-direction: column;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
-    border-radius: 12px;
+    border-radius: 25px;
     overflow: hidden;
-    /* height: 20em; */
     justify-content: center;
-    /* height: 20em; */
     align-items: center;
 
 
@@ -559,10 +657,11 @@ a.p-menuitem-link {
 
 
 
+
 .delete-option {
     color: red;
     font-weight: bold;
-    padding-top: 1em;
+    padding-top: 0.5em;
 }
 
 .cancel-option {
@@ -575,22 +674,26 @@ a.p-menuitem-link {
 }
 
 .komentar_container {
-    /* border: 1px solid red; */
     min-width: 28em;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .no-comment-container {
-    /* border: 1px solid red; */
-    height: 35em;
-    min-width: 35em;
+
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    transform: translateY(-50%);
+    position: relative;
+    height: 100%;
+    top: 50%;
+    left: 0%;
 }
 
 .no-comment-text {
-    font-size: 2em;
+    font-size: 1.5em;
     font-weight: 600;
     color: black;
 }
@@ -610,7 +713,7 @@ a.p-menuitem-link {
 }
 
 .footerPicHeart {
-    width: 2em;
+    width: 1.5em;
     margin-left: 1em;
     cursor: pointer;
 }
@@ -620,7 +723,7 @@ a.p-menuitem-link {
 }
 
 .footerPicBookMark {
-    width: 2em;
+    width: 1.5em;
     margin-right: 1em;
     cursor: pointer;
 }
@@ -630,13 +733,17 @@ a.p-menuitem-link {
 }
 
 .likedBy-text {
-    margin-left: 1em;
+    margin-left: 1.1em;
+    font-size: 14px;
+    color: black;
 }
 
 .comment_post_container {
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    flex: 0 0 auto;
     border-top: 1px solid #dbdbdb;
     width: 100%;
 }
@@ -649,23 +756,21 @@ a.p-menuitem-link {
     margin-top: 0.2em;
     margin-left: 0.7em;
 
-    /* Space between emoji and textarea */
 }
 
 .emoji-container_second {
-    position: relative; /* Osigurava da se emoji picker pozicionira relativno unutar ovog container-a */
+    position: relative;
 }
 
 .add-comment-container {
     flex: 1;
-    /* Takes the remaining space */
 }
 
 .add-comment-textarea {
-    width: 30em;
+    width: 23em;
     border: none;
     outline: none;
-    font-size: 1em;
+    font-size: 14px;
     resize: none;
     background-color: transparent;
     color: black;
@@ -685,28 +790,26 @@ a.p-menuitem-link {
 }
 
 .post_theComment_text {
-    color: #0095F6;
+    color: #4A5DF9;
     font-weight: 600;
     cursor: pointer;
     opacity: 0.5;
-    font-size: 1.05em;
+    font-size: 14px;
     transition: opacity 0.2s ease-in-out;
 
 }
 
 
 
+
 .post_theComment_text.enabled {
     opacity: 1;
-    /* Full opacity when enabled */
-    color: #0095f6;
-    /* Instagram blue for active state */
+    color: #4A5DF9;
     cursor: pointer;
 }
 
 .post_theComment_text.disabled {
     pointer-events: none;
-    /* Prevent clicks when disabled */
 }
 
 .comment_section {
@@ -717,102 +820,161 @@ a.p-menuitem-link {
 
 .single_comment {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 36em;
+    align-items: flex-start;
+    gap: 10px;
+    width: 91%;
+    box-sizing: border-box;
     position: relative;
-    margin-bottom: 1em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
 }
 
+.description {
+    margin-bottom: 1.5em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    display: flex;
+    align-items: center;
+}
+
+.comments-container,
+.right-container-username,
+.profile_picture_main_post_container {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden !important;
+    min-width: 0;
+    height: 100%;
+}
+
+.comments-container {
+    overflow: hidden !important;
+    min-width: 0;
+    margin-left: 0.2em;
+    height: 100%;
+}
+
+
 .comment_profile_pic {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
+}
+
+.comment_main_content {
+    display: flex;
+    flex-direction: column;
+
+}
+
+.description_text {
+    font-size: 16px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    flex-grow: 1;
+
+    overflow-wrap: break-word;
+    max-width: 83%;
+
+    margin-left: 0.5em;
 }
 
 .comment_text {
     font-size: 16px;
     line-height: 1.4;
-    margin-left: 1em;
+    margin-left: 0.5em;
     flex-grow: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 83%;
+    margin-top: -0.2em;
+}
+
+.p-tabmenu-nav .p-menuitem-text {
+    display: none;
 }
 
 .comment_username {
     margin-right: 5px;
-    font-size: 1.1em;
+    font-size: 14px;
 }
 
-.single_comment {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    position: relative;
-    padding: 5px;
-    transition: background 0.2s ease-in-out;
-}
+
 
 .comment_profile_pic {
     border-radius: 50%;
     object-fit: cover;
 }
 
-.comment_text {
-    font-size: 14px;
-    line-height: 1.4;
-    flex-grow: 1;
-}
+
 
 .comment_username {
     font-weight: bold;
     margin-right: 5px;
 }
 
-.comment_more_icon {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    display: none;
-    position: absolute;
-    left: 32em;
-}
+
+
 
 .single_comment:hover .comment_more_icon {
     display: block;
+    cursor: pointer;
 }
 
 .custom-comment-dialog {
     text-align: center;
 }
 
-.comment-dialog-content {
+.custom-comment-dialog.p-dialog .p-dialog-content {
+    max-width: 25em !important;
+    width: 25em;
+    padding: 0 !important;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    align-items: stretch;
+    justify-content: center;
+    border-radius: 25px;
+}
+
+.comment-dialog-content {
+    gap: 0;
+    justify-content: center;
+    align-items: stretch;
 }
 
 .comment-dialog-option {
     cursor: pointer;
-    padding: 10px;
+    padding: 18px 0;
+    font-size: 15px;
+    background: white;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    font-weight: 500;
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.comment-dialog-option:last-child {
+    border-bottom: none;
 }
 
 .comment-dialog-option.delete-option {
-    color: red;
+    color: #ed4956;
     font-weight: bold;
 }
 
-.custom-comment-dialog.p-dialog .p-dialog-content {
-    max-width: 31em !important;
-    height: 14em;
 
-}
 
 .custom-comment-dialog .p-dialog-header {
-    max-width: 31em !important;
+    display: none;
 }
 
 .commentsPicHeart {
-    width: 1em;
+    width: 12px;
     cursor: pointer;
 }
 
@@ -824,8 +986,8 @@ a.p-menuitem-link {
 
 .emoji-picker {
     position: absolute;
-    z-index: 1000; /* Osigurava da se prikazuje iznad drugih elemenata */
-    top: -30em; /* Pomaknite iznad trenutnog diva, prilagodite vrijednost prema potrebi */
+    z-index: 1000;
+    top: -30em;
     left: 0;
     background-color: white;
     border: 1px solid #ccc;
@@ -835,20 +997,188 @@ a.p-menuitem-link {
 
 .emoji-picker-second {
     position: absolute;
-    z-index: 1000; /* Osigurava da se prikazuje iznad drugih elemenata */
-    top: 0em; /* Pomaknite iznad trenutnog diva, prilagodite vrijednost prema potrebi */
-    left: 30em;
+    z-index: 1000;
+    top: 0em;
+    left: 31em;
     background-color: white;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-/* Override active tab styling u TabMenu komponenti */
-/* Ovo pravilo osigurava da aktivnom tabu bude dodana crna linija ispod */
+
+
 .p-tabmenu .p-menuitem-active .p-menuitem-link {
     border-bottom: 2px solid black !important;
 }
 
+.tabmenu-divider {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    height: 1px;
+    background: #e0e0e0;
+}
 
-  
-  
+.profile-tabs-wrapper {
+    max-width: 935px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.p-tabmenu .p-tabmenu-nav {
+    justify-content: center;
+    border-bottom: none !important;
+}
+
+.tabmenu-divider {
+    width: 100%;
+    height: 1px;
+    background: #e0e0e0;
+    margin: 0;
+    padding: 0;
+}
+
+.user-images-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    width: 100%;
+    margin-top: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.comment_meta_row {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    font-size: 13px;
+    color: #8e8e8e;
+    margin-left: 4.5em;
+    margin-top: -1.3em;
+    position: relative;
+    min-height: 20px;
+    margin-bottom: 1.5em;
+}
+
+.comment_meta_row .comment_reply {
+    color: #8e8e8e;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.comment_meta_row .comment_likes {
+    color: #8e8e8e;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.comment_meta_row .comment_more_icon {
+    margin-left: 0em;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+
+
+.single_comment:hover .comment_meta_row .comment_more_icon {
+    display: inline-block;
+}
+
+.image-skeleton {
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.image-skeleton-dialog {
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.skeleton-shimmer {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.close-dialog-button:focus {
+    visibility: hidden;
+}
+
+@keyframes ps-slide-in-right {
+    from {
+        opacity: 0.6;
+        transform: translateX(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes ps-slide-in-left {
+    from {
+        opacity: 0.6;
+        transform: translateX(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.full-image.slide-in-right {
+    animation: ps-slide-in-right 180ms ease-out;
+}
+
+.full-image.slide-in-left {
+    animation: ps-slide-in-left 180ms ease-out;
+}
+
+.ps-dots {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.ps-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.ps-dot.active {
+    background: #fff;
+}

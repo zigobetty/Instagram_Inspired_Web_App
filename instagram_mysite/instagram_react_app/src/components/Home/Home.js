@@ -1,73 +1,42 @@
-import React, { useState, useEffect } from "react";
-import { Outlet } from "react-router-dom"; // Dinamičke child rute
+import React, { useState, useContext } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import "../Home/Home.css";
-import SidebarCustom from "../SidebarCustom/SidebarCustom"; // Sidebar komponenta
+import SidebarCustom from "../SidebarCustom/SidebarCustom";
+import { UserContext } from "../UserContext";
 
 const Home = () => {
-  const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState(null); // Pohrana svih podataka korisnika
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const { showSearchOverlay, showMessagesOverlay } = useContext(UserContext);
+  const location = useLocation();
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:8000/api/user-profile/",
-          {
-            method: "GET",
-            credentials: "include", // Uključuje kolačiće za sesiju
-          }
-        );
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.error("Korisnik nije logiran.");
-            setUserData(null);
-            return;
-          }
-          throw new Error("Failed to fetch user profile.");
-        }
-
-        const data = await response.json();
-        if (data.success) {
-          console.log("Podaci o korisniku:", data.data); // Logiraj sve podatke o korisniku
-          setUserData(data.data); // Postavljamo podatke korisnika
-        } else {
-          console.error("Greška:", data.error);
-        }
-      } catch (error) {
-        console.error("Greška kod dohvaćanja korisničkog profila:", error);
-      } finally {
-        setLoading(false); // Završeno učitavanje
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
-  // 🔹 Dodaj ovu funkciju za osvježavanje slika u ProfileSidebar
   const refreshImages = () => {
-    console.log("Refreshing images...");
     setForceRefresh((prev) => !prev);
   };
 
-  // Koristimo useState za forsiranje re-rendera
-  const [forceRefresh, setForceRefresh] = useState(false);
+  const isSidebarCollapsed = showMessagesOverlay;
+  const sidebarWidth = isSidebarCollapsed ? "5em" : "19em";
+
+  const isMessagesPage = location.pathname === "/home/messages";
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflowX: "hidden" }}>
-      <SidebarCustom
-        onImageUploaded={refreshImages}
-        onHide={() => {
-        }}
-      />
+    <div
+      className="app-wrapper"
+      style={{ display: "flex", width: "100vw", minHeight: "100vh" }}
+    >
       <div
+        className="sidebar"
         style={{
-          flex: 1,
-          width: "119em",
-          paddingLeft: "25em",
-          paddingTop: "2.3em",
-          overflowX: "hidden",
-          backgroundColor:"white",
+          width: sidebarWidth,
+          flexShrink: 0,
+          transition: "width 0.3s ease",
+        }}
+      >
+        <SidebarCustom onImageUploaded={refreshImages} onHide={() => {}} />
+      </div>
+      <div
+        className="main-app-container"
+        style={{
+          paddingTop: isMessagesPage ? "0" : undefined,
         }}
       >
         <Outlet context={{ refreshImages }} />

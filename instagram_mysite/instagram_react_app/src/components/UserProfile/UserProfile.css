@@ -1,0 +1,222 @@
+.message-button:hover,
+.addUser-button:hover {
+  background-color: #d7d4d4 !important;
+  color: black;
+  cursor: pointer;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.image-skeleton {
+  width: 100%;
+  height: 100%;
+  background-color: #f0f0f0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.image-skeleton-dialog {
+  width: 100%;
+  height: 100%;
+  background-color: #f0f0f0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.skeleton-shimmer {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.comment_more_icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.comment_more_icon:hover {
+  opacity: 1;
+}
+
+@keyframes up-slide-in-right {
+  from {
+    opacity: 0.6;
+    transform: translateX(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes up-slide-in-left {
+  from {
+    opacity: 0.6;
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.full-image.slide-in-right {
+  animation: up-slide-in-right 180ms ease-out;
+}
+
+.full-image.slide-in-left {
+  animation: up-slide-in-left 180ms ease-out;
+}
+
+.up-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.up-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.up-dot.active {
+  background: #fff;
+}
+
+
+
+.userProfile-image {
+  position: relative;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #fff;
+}
+
+.userProfile-image:hover .uploaded-image {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.userProfile-image:hover .image-overlay {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.image-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-icon {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+
+/* Grid styles */
+.user-images-wrapper {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  margin-top: -0.05em;
+}
+
+.user-images-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+  box-sizing: border-box;
+  padding-right: 6em !important;
+  padding-left: 2em !important;
+  padding-bottom: 2em !important;
+}
+
+.uploaded-image {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+
+.follow-button:focus,
+.unfollow-button:focus,
+.message-button:focus,
+.addUser-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.p-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

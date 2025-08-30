@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 const UserDetail = () => {
-  const { id } = useParams(); // Dohvati ID iz URL-a
+  const { id } = useParams(); 
   const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
 
-  // Fetch podataka korisnika prema ID-u iz URL-a
   useEffect(() => {
     fetch(`/api/users/${id}/`)
       .then((res) => res.json())
@@ -14,7 +13,6 @@ const UserDetail = () => {
       .catch((error) => console.error('Error fetching user:', error));
   }, [id]);
 
-  // Dohvat korisničkog ID-a iz localStorage
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
     if (storedUserId) {
@@ -24,7 +22,6 @@ const UserDetail = () => {
     }
   }, []);
 
-  // Prikaz za vrijeme učitavanja podataka
   if (!user) return <div>Loading...</div>;
 
   return (

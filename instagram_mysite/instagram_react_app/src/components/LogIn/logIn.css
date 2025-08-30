@@ -1,369 +1,382 @@
-.main{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 58rem;
-    width: 100%;
-    /* background-color: red; */
-    /* border:2px solid blue; */
-}
-.main-grid{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-direction: row;
-    gap: 4em;
-    height: 43rem;
-}
-
-.left-grid{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* border:2px solid blue; */
-    height: 44rem;
-    width: 23em;
-
-}
-
 body {
-    margin: 0 0;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    background: white;
-  }
-  
-  .container {  
-    height: 80vh;
-    margin: 10vh auto;
-    width: auto;
-  }
-  
-  .phone,
-  .phone img {
-    height: 100%;
-  }
-  
-  .phone {
-    position: relative;
-    
-  }
-  
-  .phone .notch-container {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    height: 100px;
-  }
-  
-  .phone .notch-container .notch {
-    width: 20vh;
-    height: 3.9vh;
-    margin: 0 auto;
-    background-color: #111;
-    border-bottom-left-radius: 2.334vh;
-    border-bottom-right-radius: 2.334vh;
-  }
-  
-  .phone img {
-    display: block;
-    border: 1.334vh solid #111;
-    border-radius: 4.5vh;
-  }
+  margin: 0;
+  padding: 0;
+  height: auto;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 
-  
-
-.right-grid{
-    display: flex;
-    justify-content: start;
-    align-items: center;
-    flex-direction: column;
-    height: 52rem;
-    width: 32em;
-    margin-top: 3em;
-    /* border: 2px solid red; */
-
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 2em;
+  padding-bottom: 3em;
+  height: auto;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 
-
-.logIn-container{
-    border:0.5px solid rgb(179, 176, 176);
-    height: 40em;
-    width: 32em;
-
-}
-.logIn-container-footer{
-    border:0.5px solid rgb(179, 176, 176);
-    height: 4em;
-    width: 32em;
-    margin-top: 0.5em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: row;
-    gap: 0.5em;
-
+.main-inner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: fit-content;
+  gap: 3em;
 }
 
-.signUp-text{
-    color: #039be5;
-    font-weight: 600;
-    font-size: 1rem;
+.left-container {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  width: 55%;
+  min-width: 300px;
 }
 
-
-.logIn-container-getApp{
-    height: 16%;
-    width: 23em;
-    margin-top: 1em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-
-}
-.getTheApp-header-container{
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 15%;
+.right-container {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  width: 40%;
+  min-width: 300px;
 }
 
-.getTheApp-container{
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   width: 100%;
-   overflow: hidden; 
-
+.logIn-img {
+  height: 450px !important;
 
 }
 
-.googlePlay-img,
-.microsoft-img {
-  width: 12em; /* Možeš koristiti i određenu vrijednost ako želiš različite dimenzije */
-  height: auto; 
-  object-fit: contain; /* Ili cover, ovisno što želiš postići */
+.form-container {
+  /* border: 0.5px solid rgb(179, 176, 176); */
+  width: 100%;
+  max-width: 350px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logIn-container {
+  border: 0.5px solid rgb(179, 176, 176);
+  height: 40em;
+  width: 32em;
+
 }
 
 
 .logo-container {
-    margin-top: 1em;
-    display: flex;
-    align-items: center;
-    height: 20%;
-    justify-content: center;
-}
-.logo{
-    width: 18em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5em;
 }
 
-.data-container{
-    display: flex;
-    margin-top: 0em;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    /* border:0.3px solid red; */
-    height: 35%;
-    gap: 1.5em;
-    
+.logo_img {
+  width: 175px;
 
 }
-.input{
-    border-radius: 3px !important;
-    width: 21em;
-    height: 3.2em;
-}
-.button-login{
-    background-color: #4cb5f9;
-    width: 21em;
-    height: 2.5em;
-    border-radius: 10px;
-    border: none;
-    font-weight: 600;
-    margin-top: -1.5em;
+
+.data-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 1rem;
+  gap: 1.5rem;
+  margin-top: 1em;
 }
 
-.text-label{
-    font-size: 1em !important;
+.input {
+  width: 100% !important;
+  height: 2.2rem !important;
+  font-size: 0.75rem !important;
+  background-color: #FAFAFA;
+  font-size: 14px;
 }
 
 
-.password-container {
-    position: relative;
-    margin-bottom: 20px; 
+.input:hover {
+  border: 0.5px solid rgb(179, 176, 176) !important;
+  box-shadow: none !important;
+}
+
+.input:focus {
+  border: 0.5px solid rgb(68, 68, 68) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.p-float-label {
+  width: 100%;
+}
+
+.p-float-label label {
+  margin-left: 0.1em;
 }
 
 .input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-wrapper .input {
-    flex-grow: 1;
-    padding-right: 50px; 
-}
-
-.toggle-password {
-    position: absolute;
-    right: 1em;
-    cursor: pointer;
-    color: black;
-    font-size: 1em;
-    font-weight: bold;
-    -webkit-user-select: none;
-    user-select: none;
-    opacity: 0.8;
-}
-
-.line-container{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex-direction: row;
-    gap: 1em;
-
-}
-
-.or-text{
-    font-weight: 600;
-    color: gray;
-    opacity: 0.7;
-}
-.p-line{
-    background-color: gray;
-    height: 0.05em;
-    opacity: 0.3;
-    width: 8.8em;
-    margin-top: 1.7em;
-
-}
-
-.logIn-facebook-container{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex-direction: row;
-    gap: 0.3em;
-
-}
-
-.logIn-facebook-text{
-    color: #039be5;
-    font-weight: 600;
-
-}
-
-.img-facebook{
-    width: 30px;
-    height: auto;
-    object-fit: contain;
-}
-
-.forgotten-password-container{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7em;
-
-}
-.report-container{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7em;
-    text-align: center;
-
-
-}
-.report-text {
-    margin: 30px 55px;
-    color: rgba(106, 102, 102, 0.6);  /* Crvena boja s manjim opacity za sve tekstove unutar p, uključujući one koji nisu linkovi */
-}
-
-.report-text a {
-    color: black;  /* Crna boja za linkove */
-    text-decoration: none;  /* Ako želiš ukloniti podcrtavanje linka */
-    opacity: 1;  /* Vraćamo puni opacity za link */
-}
-
-.report-text a:hover {
-    opacity: 0.5;  /* Smanjen opacity pri hover-u na link */
-    text-decoration: underline;  /* Dodaj podcrtavanje prilikom hover-a za bolji vizualni dojam */
-}
-
-
-.phone,
-.phone img {
-  height: 100%;
-}
-
-
-
-.phone {
-  position: absolute;
-  transition: all 0.3s ease-in-out;
-  height: 100%;
-}
-
-.phone-back {
-  top: -10px;
-  left: 17em;
-  z-index: 1;
-  opacity: 0.8;
-  transform: scale(0.8); 
-}
-
-.phone-front {
-  position: relative;
-  z-index: 2;
-  top: 3.5em;
-}
-
-.phone .notch-container {
-  position: absolute;
-  top: 0;
   width: 100%;
-  height: 100px;
+
 }
 
-.phone .notch-container .notch {
-  width: 20vh;
-  height: 3.9vh;
-  margin: 0 auto;
-  background-color: #111;
-  border-bottom-left-radius: 2.334vh;
-  border-bottom-right-radius: 2.334vh;
+.button-login {
+  background-color: #0095f6;
+  width: 100%;
+  height: 2.2em;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9em;
 }
 
-.phone img {
-  display: block;
-  border: 0.5em solid #111;
-  border-radius: 4.5vh;
+.button-login:hover {
+  background-color: #0a7bc7;
 }
 
-.text1-logIn-container{
-    display:flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    width: 100%;
+.line-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+
+}
+
+.p-line {
+  background-color: #A8A8A8;
+  height: 1px;
+  flex: 1;
+  max-width: 100px;
+}
+
+.or-text {
+  font-weight: 600;
+  font-size: 12px;
+  color: #A8A8A8;
+  text-transform: uppercase;
+  padding: 0 0.5rem;
+}
+
+.facebook-logIn-cont {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
+
+}
+
+.facebook-text {
+  font-size: 13px;
+  cursor: pointer;
+  color: #0095f6;
+  font-weight: 700;
+}
+
+.facebook-text:hover {
+  color: black;
+}
+
+.facebook-logIn-cont svg {
+  color: #0095f6;
+  cursor: pointer;
+}
+
+.forgotten-pass-text {
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.signUp-text {
+  color: #0095f6;
+  cursor: pointer;
+  font-weight: 700;
+
+}
+
+.googleImg {
+  width: 100px;
+}
+
+.text-label {
+  width: 100%;
+  font-size: 12px;
+
+}
+.footer-container{
+  margin-top: -2em;
+}
+
+@media screen and (max-width: 875px) {
+  .main-inner-container {
     flex-direction: column;
-    margin-top: 2em;
-    color: gray;
-  
-   
+    padding: 1rem;
+    gap: 2em;
+  }
+
+  .left-container {
+    display: none;
+  }
+
+  .right-container {
+    width: 100%;
+    justify-content: center;
+  }
+  .policy-text{
+    padding-left: 0em !important;
+    padding-right: 0em !important;
+  }
+ 
+  .form-container {
+    max-width: 90%;
+    padding: 1.5em;
+    gap: 1.2em;
+  }
+
+  .second-inner-div {
+    margin-top: 2em !important;
+  }
+
+  .button-login,
+  .input,
+  .input-wrapper,
+  .p-float-label {
+    max-width: 280px !important;
+    width: 100% !important;
+    margin: 0 auto;
+  }
+
+  .data-container {
+    gap: 1.5em !important;
+  }
+
+  .footer-container {
+    margin-top: -8em !important;
+    padding-bottom: 1.5em;
+    position: static;
+    width: 100%;
+    padding: 2em;
+  }
+
+  .main-container {
+    justify-content: flex-start;
+    margin-top: -3em;
+    height: auto;
+    min-height: 100vh;
+  }
 }
 
-/* Provjerite da li postoji neki CSS koji dodaje sadržaj u input polje */
-.input-wrapper::before,
-.input-wrapper::after {
-  /* Provjerite da li postoji sadržaj koji dodaje ikonu */
-  content: none; /* Ako postoji, postavite na 'none' */
+@media screen and (max-width: 768px) {
+  .main-container {
+    justify-content: flex-start;
+    padding-top: 2em;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .main-inner-container {
+    flex-direction: column;
+    gap: 1.5em;
+    padding: 1em;
+  }
+
+  .form-container {
+    padding: 1.5em;
+    gap: 1.2em;
+  }
+
+  .data-container {
+    gap: 1.2em;
+  }
+
+  .footer-container {
+    margin-top: 2em;
+    padding-bottom: 1.5em;
+    position: static;
+    width: 100%;
+  }
+
+  .second-inner-div {
+    margin-top: 2em !important;
+  }
+
+  .button-login,
+  .input,
+  .input-wrapper,
+  .p-float-label {
+    max-width: 280px !important;
+    width: 100% !important;
+    margin: 0 auto;
+  }
+}
+
+
+@media screen and (max-width: 450px) {
+  .main-container {
+    height: auto;
+    min-height: 100vh;
+    padding-bottom: 2em;
+  }
+
+  .form-container {
+    border: none;
+    padding: 1rem;
+  }
+
+  .data-container {
+    padding: 0.5rem;
+    gap: 1rem;
+  }
+
+  .logo-container {
+    margin-top: 1em;
+  }
+
+  .googleImg {
+    width: 100px;
+    height: auto;
+  }
+
+  .second-inner-div {
+    margin-top: 1em !important;
+  }
+}
+
+
+@media screen and (max-width: 360px) {
+
+  .form-container,
+  .footer-container {
+    max-width: 100%;
+    padding: 1em;
+  }
+
+  .footer-container p {
+    font-size: 11px;
+    word-spacing: normal;
+  }
+
+  .button-login {
+    font-size: 0.85em;
+  }
+}
+
+/* Iphone SE */
+@media screen and (width: 375px) and (height: 667px) {
+  .footer-text{
+    margin-top: 10em !important;
+  }
+
+}
+
+@media screen and (width: 360px) and (height: 740px) {
+  .footer-container{
+    margin-top: -3em !important;
+  }
+
 }
