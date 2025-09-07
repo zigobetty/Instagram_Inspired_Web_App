@@ -1,0 +1,542 @@
+.account-edit-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  background-color: #fafafa;
+  overflow: hidden;
+}
+
+.left-sidebar {
+  width: 28%;
+  background-color: white;
+  border-right: 1px solid #dbdbdb;
+  box-sizing: border-box;
+  padding-top: 0.7em;
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.editAccount-settings-container {
+  padding-left: 1.5em;
+}
+
+.editAccount-editprofile-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+.right-content {
+  width: 72%;
+  box-sizing: border-box;
+  padding-top: 1.5em;
+  padding-left: 6.5em;
+  background-color: white;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.right-content h1 {
+  margin: 0 0 2rem 0;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Meta kartica stilovi */
+.meta-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.35rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.meta-card:hover {
+  background-color: rgb(245, 245, 245);
+}
+
+.meta-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.meta-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.meta-logo {
+  color: #1877f2;
+  width: 60px;
+  height: 12px;
+}
+
+
+
+.accounts-centre-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 0.5rem 0;
+}
+
+.accounts-centre-description {
+  font-size: 12px;
+  color: #737373;
+  line-height: 1.4;
+  margin: 0 0 1.5rem 0;
+  max-width: 19em;
+}
+
+.accounts-centre-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 14px;
+  color: #262626;
+}
+
+.feature-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.see-more-button {
+  background: transparent;
+  border: none;
+  color: lch(43.62% 97.84 300.23);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  width: 100%;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.see-more-button:hover {
+  color: #1a1a1a;
+}
+
+/* Navigacija stilovi */
+.settings-navigation {
+  margin-top: 2rem;
+}
+
+.nav-section {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #737373;
+  margin: 0 0 1rem 21px;
+  width: 100%;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  width: 94%;
+}
+
+.nav-item:hover {
+  background-color: #eeeeee;
+}
+
+.nav-item.active {
+  background-color: #eeeeee;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #262626;
+}
+
+.nav-item span {
+  font-size: 14px;
+  color: #262626;
+  font-weight: 400;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #efefef;
+  border-radius: 20px;
+  padding: 14px 20px;
+  margin-top: 20px;
+  width: 80%;
+  margin-bottom: 2em;
+}
+
+.profile-username,
+.profile-fullname {
+  margin: 0;
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-info {
+  flex: 1;
+  margin-left: 15px;
+}
+
+.profile-username {
+  font-weight: bold;
+  font-size: 16px;
+  color: black;
+}
+
+.profile-fullname {
+  font-size: 14px;
+  color: #737373;
+}
+
+.change-photo-btn {
+  background: #4a5df9;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 550;
+  font-size: 14px;
+}
+
+.change-photo-btn:hover {
+  background: #344bf7;
+}
+
+.custom-dialog {
+  border-radius: 25px !important;
+}
+
+.dialog-content {
+  padding: 0;
+}
+
+.dialog-divider {
+  height: 1px;
+  background-color: #dbdbdb;
+  margin: 0;
+}
+
+.custom-uploadPhoto-btn {
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0095f6;
+  cursor: pointer;
+  text-align: center;
+}
+
+
+
+.dialog-text-remove {
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ed4956;
+  cursor: pointer;
+  text-align: center;
+  margin: 0;
+}
+
+
+
+.dialog-text-cancel {
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  cursor: pointer;
+  text-align: center;
+  margin: 0;
+}
+.custom-textarea:focus {
+  border: 1px solid black !important; 
+  outline: none !important;   
+  box-shadow: none !important;         
+}
+
+.gender-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gender-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.gender-option:hover {
+  background: #eeeeee;
+}
+
+.circle {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle.selected {
+  border-color: black;
+  background: black;
+  color: white;
+}
+
+.check {
+  font-size: 12px;
+}
+.gender-input:hover {
+  background: rgb(239, 239, 239) !important;
+}
+
+/* Gender Dialog Styling */
+.gender-dialog-modal .p-dialog {
+  border-radius: 20px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 8px 0 0 0 !important;
+}
+
+.gender-dialog-modal .p-dialog-header {
+  display: none !important;
+}
+
+.gender-dialog-modal .p-dialog-content {
+  padding: 0 !important;
+  border-radius: 20px !important;
+}
+
+.gender-dialog {
+  padding: 20px;
+}
+
+.gender-container {
+  position: relative;
+}
+
+.gender-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.gender-option:last-child {
+  border-bottom: none;
+}
+
+.gender-option:hover {
+  background-color: #f8f8f8;
+  margin: 0 -20px;
+  padding: 12px 20px;
+}
+
+/* RadioButton styling */
+.gender-option .p-radiobutton {
+  margin: 0 !important;
+}
+
+.gender-option .p-radiobutton .p-radiobutton-box {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #ccc !important;
+  border-radius: 50% !important;
+  background: white !important;
+  transition: all 0.2s ease !important;
+}
+
+.gender-option .p-radiobutton .p-radiobutton-box.p-highlight {
+  border-color: #000 !important;
+  background: #000 !important;
+}
+
+.gender-option .p-radiobutton .p-radiobutton-box .p-radiobutton-icon {
+  width: 8px !important;
+  height: 8px !important;
+  background: white !important;
+  border-radius: 50% !important;
+}
+
+/* Dodatni selektori za sigurnost */
+.gender-dialog .p-radiobutton .p-radiobutton-box.p-highlight {
+  border-color: #000 !important;
+  background: #000 !important;
+}
+
+.gender-dialog .p-radiobutton .p-radiobutton-box.p-highlight .p-radiobutton-icon {
+  background: white !important;
+}
+
+/* Još specifičniji selektori */
+.p-radiobutton-box.p-highlight {
+  border-color: #000 !important;
+  background-color: #000 !important;
+}
+
+.p-radiobutton-box.p-highlight .p-radiobutton-icon {
+  background-color: white !important;
+}
+
+/* Override za sve radio buttonove u gender dialogu */
+.gender-dialog-modal .p-radiobutton-box.p-highlight {
+  border-color: #000 !important;
+  background-color: #000 !important;
+}
+
+.gender-dialog-modal .p-radiobutton-box.p-highlight .p-radiobutton-icon {
+  background-color: white !important;
+}
+
+/* Custom radio button stilovi */
+.custom-radio-button .p-radiobutton-box {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #ccc !important;
+  border-radius: 50% !important;
+  background: white !important;
+}
+
+.custom-radio-button .p-radiobutton-box.p-highlight {
+  border-color: #000 !important;
+  background-color: #000 !important;
+}
+
+.custom-radio-button .p-radiobutton-box.p-highlight .p-radiobutton-icon {
+  background-color: white !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+}
+
+/* Još agresivniji override */
+.p-radiobutton-box.p-highlight,
+.p-radiobutton-box.p-focus,
+.p-radiobutton-box:checked {
+  border-color: #000 !important;
+  background-color: #000 !important;
+}
+
+.p-radiobutton-box.p-highlight .p-radiobutton-icon,
+.p-radiobutton-box.p-focus .p-radiobutton-icon,
+.p-radiobutton-box:checked .p-radiobutton-icon {
+  background-color: white !important;
+}
+
+/* Custom HTML radio input stilovi */
+.custom-radio-input {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #ccc !important;
+  border-radius: 50% !important;
+  background: white !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+.custom-radio-input:checked {
+  border-color: #000 !important;
+  background-color: #000 !important;
+}
+
+.custom-radio-input:checked::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background-color: white !important;
+}
+
+/* Footer link hover effect */
+.footer-link:hover {
+  text-decoration: underline !important;
+}
+
+.customGender-textarea:focus {
+  border: 1px solid black !important; 
+  outline: none !important;   
+  box-shadow: none !important;         
+}
+.see-profileInfo-visible-text:hover {
+  text-decoration: underline !important;
+}
+.p-overlaypanel .p-overlaypanel-content{
+  padding: 0 !important;
+}
+.p-overlaypanel.p-overlaypanel-flipped:before{
+  display: none !important;
+}
+.p-overlaypanel.p-overlaypanel-flipped::after{
+  display: none !important;
+}

@@ -19,8 +19,13 @@
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .header-profile-container {
@@ -39,8 +44,11 @@
 }
 
 .right-header-container {
-    /* border: 1px solid #999; */
-    margin-top: -3em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    width: 100%;
 }
 
 .main-story-container-profile {
@@ -121,7 +129,7 @@
     display: flex;
     justify-content: start;
     align-items: center;
-    gap: 2.7em;
+    gap: 3em;
 
 }
 
@@ -133,6 +141,7 @@
 .middle-profile-text {
     font-size: 16px;
     letter-spacing: 0.05em;
+    color: #737373;
 }
 
 .bottom-profile-text {
@@ -1181,4 +1190,120 @@ a.p-menuitem-link {
 
 .ps-dot.active {
     background: #fff;
+}
+
+/* Bio tekst stilovi */
+.bio-text {
+    max-width: 25em;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.4;
+    white-space: normal;
+}
+
+/* Followers Dialog Styling */
+.custom-followers-dialog .p-dialog {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.custom-followers-dialog .p-dialog-content {
+    padding: 0 !important;
+    border-radius: 12px !important;
+}
+
+.followers-dialog-content {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.followers-dialog-header {
+    position: relative;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: white;
+}
+
+/* Following Dialog Styling */
+.custom-following-dialog .p-dialog {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.custom-following-dialog .p-dialog-content {
+    padding: 0 !important;
+    border-radius: 12px !important;
+}
+
+.following-dialog-content {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.following-dialog-header {
+    position: relative;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: white;
+}
+
+.following-search-container input:focus {
+    outline: none;
+}
+
+.following-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.following-list-button:hover {
+    background-color: #e7e8ea !important;
+}
+
+.followers-search-container input:focus {
+    outline: none;
+}
+
+.followers-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.followers-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.followers-list-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.followers-list-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+.custom-followers-dialog .p-dialog-header{
+    display: none !important;
+}
+.custom-following-dialog .p-dialog-header{
+    display: none !important;
+}
+
+/* Remove Confirmation Dialog */
+.remove-confirmation-dialog .p-dialog {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.remove-confirmation-dialog .p-dialog-content {
+    padding: 0 !important;
+    border-radius: 12px !important;
+}
+
+.remove-confirmation-dialog .p-dialog-header {
+    display: none !important;
+}
+.remove-follower-button:hover {
+    background-color: #e7e8ea !important;
 }

@@ -11,8 +11,8 @@ urlpatterns = [
     path('api/get_csrf_token/',    views.get_csrf_token,      name='csrf_token'),
     path('api/check_user_exists/', views.check_user_exists,   name='check_user_exists'),
     path('api/register_user',     views.register_user,       name='register_user'),
-
     path('api/logout/', views.logout_view, name='logout'),
+    
     path('api/users', views.list_users, name='list_users'),
     path('api/users/<int:pk>/', UserDetailView.as_view(), name='user_detail'),
     path('api/delete-user', delete_user, name='delete_user'),
@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/get-user-images/', views.get_user_images, name='get_user_images'),
     path('api/delete-image/<int:image_id>/', views.delete_user_image, name='delete_user_image'),
     path('api/update-profile/', views.update_user_profile, name='update_user_profile'),
+    path('api/update-bio-gender/', views.update_bio_gender, name='update_bio_gender'),
     path('api/update-profile-image/', views.update_profile_image, name='update_profile_image'),
     path('api/remove-profile-image/', views.remove_profile_image, name='remove-profile-image'),
     path('api/add-comment/', views.add_comment, name='add_comment'),
@@ -58,6 +59,15 @@ urlpatterns = [
     
     # URL za following users
     path('api/following-users/', views.get_following_users, name='get_following_users'),
+    
+    # URL za user following (korisnici koje prati)
+    path('api/user/following/', views.get_user_following, name='get_user_following'),
+    
+    # URL za followers specifičnog korisnika
+    path('api/user/<int:user_id>/followers/', views.get_user_followers_by_id, name='get_user_followers_by_id'),
+    
+    # URL za following specifičnog korisnika
+    path('api/user/<int:user_id>/following/', views.get_user_following_by_id, name='get_user_following_by_id'),
 
     # Chat API URLs
     path('api/conversations/', views.get_conversations, name='get_conversations'),
@@ -67,6 +77,15 @@ urlpatterns = [
     path('api/conversations/<int:conversation_id>/send-message/', views.send_message, name='send_message'),
     path('api/conversations/<int:conversation_id>/delete/', views.delete_conversation, name='delete_conversation'),
     path('api/conversations/<int:conversation_id>/messages/<int:message_id>/delete/', views.delete_message, name='delete_message'),
+    path('api/user/followers/', views.get_user_followers, name='get_user_followers'),
+    path('api/user/followers/search/', views.search_user_followers, name='search_user_followers'),
+    path('api/user/followers/<int:follower_id>/remove/', views.remove_follower, name='remove_follower'),
+
+    # Block API URLs
+    path('api/block-user/<int:user_id>/', views.block_user, name='block_user'),
+    path('api/unblock-user/<int:user_id>/', views.unblock_user, name='unblock_user'),
+    path('api/blocked-users/', views.get_blocked_users, name='get_blocked_users'),
+    path('api/check-user-blocked/<int:user_id>/', views.check_user_blocked, name='check_user_blocked'),
 
 ]
 

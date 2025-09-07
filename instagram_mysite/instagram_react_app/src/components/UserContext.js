@@ -14,8 +14,8 @@ export const UserProvider = ({ children }) => {
   const checkCurrentRoute = () => {
     const currentPath = window.location.pathname;
     
-    // Ako smo na Messages stranici, aktiviraj Messages overlay
-    if (currentPath === '/home/messages') {
+    // Ako smo na Messages stranici ili u konverzaciji, aktiviraj Messages overlay
+    if (currentPath === '/home/messages' || currentPath.includes('/home/messages/conversation/')) {
       setShowMessagesOverlay(true);
       setShowSearchOverlay(false);
     } else if (currentPath === '/home/search') {
@@ -74,14 +74,29 @@ export const UserProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchUserProfile();
+    // Provjeri trenutnu rutu prije pozivanja fetchUserProfile
+    const currentPath = window.location.pathname;
+    const isAuthPage = ['/main_login', '/login', '/signup'].includes(currentPath);
+    
+    if (!isAuthPage) {
+      fetchUserProfile();
+    } else {
+      // Ako smo na auth stranici, postavi loading na false
+      setLoading(false);
+    }
     checkCurrentRoute(); // Provjeri trenutnu rutu pri učitavanju
   }, []); // Inicijalno dohvaćanje
 
   // Listener za promjene rute
   useEffect(() => {
     const handleRouteChange = () => {
-      fetchUserProfile();
+      // Provjeri trenutnu rutu prije pozivanja fetchUserProfile
+      const currentPath = window.location.pathname;
+      const isAuthPage = ['/main_login', '/login', '/signup'].includes(currentPath);
+      
+      if (!isAuthPage) {
+        fetchUserProfile();
+      }
       checkCurrentRoute(); // Provjeri rutu kada se promijeni
     };
 

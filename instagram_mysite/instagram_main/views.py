@@ -1,6 +1,7 @@
 import json, traceback, os
 import uuid
 import base64
+from django.db import models
 # from django.http import JsonResponse
 from django.core.files.base import ContentFile
 # from django.views.decorators.csrf import csrf_exempt
@@ -18,7 +19,7 @@ from django.db.models import Q
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
-from .models import User, UserPost, UserComment, UserFollow, CommentLike, PostLike, SavedPost, UserPostImage
+from .models import User, UserPost, UserComment, UserFollow, CommentLike, PostLike, SavedPost, UserPostImage, UserBlock
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -123,7 +124,8 @@ def register_user(request):
             contact_info=contact_info,
             full_name=full_name,
             password=hashed_password,
-            bio="" 
+            bio="",
+        gender="Prefer not to say"
         )
 
         # Generiraj JWT token odmah
@@ -140,7 +142,8 @@ def register_user(request):
                 "username": user.username,
                 "contact_info": user.contact_info,
                 "full_name": user.full_name,
-                "bio": user.bio,  
+                "bio": user.bio,
+                "gender": user.gender,
             }
         })
 
@@ -180,7 +183,8 @@ def get_user_profile(request):
             'username': user.username,
             'email': user.contact_info,
             'full_name': user.full_name,
-            'bio': user.bio,  
+            'bio': user.bio,
+            'gender': user.gender,
             'posts': user.posts,
             'followers': user.followers,
             'following': user.following,
@@ -367,6 +371,37 @@ def update_user_profile(request):
     return JsonResponse({'success': True, 'message': 'Profile updated'})
 
 
+@api_view(['PUT'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def update_bio_gender(request):
+    """Ažuriranje bio i gender polja korisnika."""
+    try:
+        data = request.data
+        user = request.user
+        
+        # Ažuriraj bio ako je poslan
+        if 'bio' in data:
+            user.bio = data['bio']
+        
+        # Ažuriraj gender ako je poslan
+        if 'gender' in data:
+            user.gender = data['gender']
+        
+        user.save()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Bio and gender updated successfully',
+            'data': {
+                'bio': user.bio,
+                'gender': user.gender
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -474,16 +509,52 @@ def delete_comment(request, comment_id):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def search_users(request):
     query = request.GET.get('query', '').strip()
     if not query:
         return JsonResponse({'success': False, 'error': 'Search query is required'}, status=400)
+    
     users = User.objects.filter(Q(username__icontains=query) | Q(full_name__icontains=query))
+    
+    # Dohvati korisnike koje je trenutni korisnik blokirao
+    blocked_users = UserBlock.objects.filter(blocker=request.user).values_list('blocked', flat=True)
+    
+    # Dohvati korisnike koji su blokirali trenutnog korisnika
+    blocked_by_users = UserBlock.objects.filter(blocked=request.user).values_list('blocker', flat=True)
+    
     data = []
+    
+    # Ako je korisnik autentificiran, provjeri follow status
+    current_user = None
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        current_user = request.user
+    
     for u in users:
+        # Preskoči blokirane korisnike i korisnike koji su blokirali trenutnog korisnika
+        if u.id in blocked_users or u.id in blocked_by_users:
+            continue
+            
         url = request.build_absolute_uri(u.profile_image.url) if u.profile_image else None
-        data.append({'id': u.id, 'username': u.username, 'full_name': u.full_name, 'profile_image': url})
+        
+        # Provjeri follow status
+        is_following = False
+        if current_user and current_user != u:
+            is_following = UserFollow.objects.filter(
+                follower=current_user, 
+                following=u
+            ).exists()
+        
+        data.append({
+            'id': u.id, 
+            'username': u.username, 
+            'full_name': u.full_name, 
+            'profile_image': url,
+            'is_following': is_following,
+            'followers_count': u.followers
+        })
+    
     return JsonResponse({'success': True, 'users': data})
 
 
@@ -494,6 +565,32 @@ def get_user_profile_by_id(request, userId):
     """Dohvaćanje profila određenog korisnika."""
     try:
         user = User.objects.get(id=userId)
+        
+        # Provjeri da li je trenutni korisnik blokiran od strane ovog korisnika
+        is_blocked_by_user = UserBlock.objects.filter(blocker=user, blocked=request.user).exists()
+        
+        if is_blocked_by_user:
+            # Vrati "User not found" ekran
+            return JsonResponse({
+                'success': True,
+                'data': {
+                    'id': user.id,
+                    'username': 'User not found',
+                    'email': '',
+                    'full_name': '',
+                    'posts': 0,
+                    'followers': 0,
+                    'following': 0,
+                    'profile_image_url': None,
+                    'is_following': False,
+                    'bio': '',
+                    'website': '',
+                    'location': '',
+                    'is_verified': False,
+                    'is_blocked_by_user': True
+                }
+            })
+        
         profile_image_url = request.build_absolute_uri(user.profile_image.url) if user.profile_image else None
         
         # Provjeri da li trenutni korisnik prati ovog korisnika
@@ -514,7 +611,8 @@ def get_user_profile_by_id(request, userId):
                 'bio': getattr(user, 'bio', ''),
                 'website': getattr(user, 'website', ''),
                 'location': getattr(user, 'location', ''),
-                'is_verified': getattr(user, 'is_verified', False)
+                'is_verified': getattr(user, 'is_verified', False),
+                'is_blocked_by_user': False
             }
         })
     except User.DoesNotExist:
@@ -878,13 +976,19 @@ def get_feed_posts(request):
     try:
         feed_type = request.GET.get('type', 'for_you')  # 'following' ili 'for_you'
         
+        # Dohvati korisnike koje je trenutni korisnik blokirao
+        blocked_users = UserBlock.objects.filter(blocker=request.user).values_list('blocked', flat=True)
+        
+        # Dohvati korisnike koji su blokirali trenutnog korisnika
+        blocked_by_users = UserBlock.objects.filter(blocked=request.user).values_list('blocker', flat=True)
+        
         if feed_type == 'following':
             # Dohvati samo objave ljudi koje pratim (bez mojih objava)
             following_users = UserFollow.objects.filter(follower=request.user).values_list('following', flat=True)
-            posts = UserPost.objects.filter(user__in=following_users).order_by('-created_at')
+            posts = UserPost.objects.filter(user__in=following_users).exclude(user__in=blocked_users).exclude(user__in=blocked_by_users).order_by('-created_at')
         else:
-            # Dohvati sve objave (moje i ostalih) - For You
-            posts = UserPost.objects.all().order_by('-created_at')
+            # Dohvati sve objave (moje i ostalih) - For You, ali ne od blokiranih korisnika
+            posts = UserPost.objects.exclude(user__in=blocked_users).exclude(user__in=blocked_by_users).order_by('-created_at')
         
         feed_posts = []
         for post in posts:
@@ -972,9 +1076,19 @@ def get_following_users(request):
         # Dohvati korisnike koje trenutni korisnik prati
         following_relationships = UserFollow.objects.filter(follower=request.user).select_related('following')[:20]
         
+        # Dohvati korisnike koje je trenutni korisnik blokirao
+        blocked_users = UserBlock.objects.filter(blocker=request.user).values_list('blocked', flat=True)
+        
+        # Dohvati korisnike koji su blokirali trenutnog korisnika
+        blocked_by_users = UserBlock.objects.filter(blocked=request.user).values_list('blocker', flat=True)
+        
         users_data = []
         for relationship in following_relationships:
             user = relationship.following
+            
+            # Preskoči blokirane korisnike i korisnike koji su blokirali trenutnog korisnika
+            if user.id in blocked_users or user.id in blocked_by_users:
+                continue
             
             # Dohvati profilnu sliku
             profile_image_url = None
@@ -1009,8 +1123,14 @@ def get_suggested_users(request):
         # Dohvati korisnike koje trenutni korisnik već prati
         following_users = UserFollow.objects.filter(follower=request.user).values_list('following', flat=True)
         
-        # Filtriraj korisnike koje ne prati
-        available_users = all_users.exclude(id__in=following_users)
+        # Dohvati korisnike koje je trenutni korisnik blokirao
+        blocked_users = UserBlock.objects.filter(blocker=request.user).values_list('blocked', flat=True)
+        
+        # Dohvati korisnike koji su blokirali trenutnog korisnika
+        blocked_by_users = UserBlock.objects.filter(blocked=request.user).values_list('blocker', flat=True)
+        
+        # Filtriraj korisnike koje ne prati, koje nije blokirao i koji ga nisu blokirali
+        available_users = all_users.exclude(id__in=following_users).exclude(id__in=blocked_users).exclude(id__in=blocked_by_users)
         
         # Uzmi 5 random korisnika
         suggested_users = available_users.order_by('?')[:5]
@@ -1137,12 +1257,31 @@ def get_conversation_messages(request, conversation_id):
             if message.sender.profile_image:
                 profile_image_url = request.build_absolute_uri(message.sender.profile_image.url)
             
+            # Dohvati reply_to podatke ako postoje
+            reply_to_data = None
+            if message.reply_to:
+                reply_sender_profile_image_url = None
+                if message.reply_to.sender.profile_image:
+                    reply_sender_profile_image_url = request.build_absolute_uri(message.reply_to.sender.profile_image.url)
+                
+                reply_to_data = {
+                    'id': message.reply_to.id,
+                    'content': message.reply_to.content,
+                    'sender': {
+                        'id': message.reply_to.sender.id,
+                        'username': message.reply_to.sender.username,
+                        'full_name': message.reply_to.sender.full_name,
+                        'profile_image': reply_sender_profile_image_url
+                    }
+                }
+            
             messages_data.append({
                 'id': message.id,
                 'content': message.content,
                 'message_type': message.message_type,
                 'file_url': message.file_url,
                 'is_read': message.is_read,
+                'reply_to': reply_to_data,
                 'sender': {
                     'id': message.sender.id,
                     'username': message.sender.username,
@@ -1336,11 +1475,21 @@ def send_message(request, conversation_id):
         if len(content) > 5000:  # Maksimalna duljina poruke
             return JsonResponse({'success': False, 'error': 'Message too long (max 5000 characters)'}, status=400)
         
+        # Dohvati reply_to poruku ako postoji
+        reply_to_id = request.data.get('reply_to')
+        reply_to_message = None
+        if reply_to_id:
+            try:
+                reply_to_message = Message.objects.get(id=reply_to_id, conversation=conversation)
+            except Message.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Reply message not found'}, status=404)
+        
         # Kreiraj novu poruku
         message = Message.objects.create(
             conversation=conversation,
             sender=request.user,
-            content=content.strip()
+            content=content.strip(),
+            reply_to=reply_to_message
         )
         
         # Dohvati profilnu sliku pošiljatelja
@@ -1348,12 +1497,31 @@ def send_message(request, conversation_id):
         if request.user.profile_image:
             profile_image_url = request.build_absolute_uri(request.user.profile_image.url)
         
+        # Dohvati reply_to podatke ako postoje
+        reply_to_data = None
+        if message.reply_to:
+            reply_sender_profile_image_url = None
+            if message.reply_to.sender.profile_image:
+                reply_sender_profile_image_url = request.build_absolute_uri(message.reply_to.sender.profile_image.url)
+            
+            reply_to_data = {
+                'id': message.reply_to.id,
+                'content': message.reply_to.content,
+                'sender': {
+                    'id': message.reply_to.sender.id,
+                    'username': message.reply_to.sender.username,
+                    'full_name': message.reply_to.sender.full_name,
+                    'profile_image': reply_sender_profile_image_url
+                }
+            }
+
         message_data = {
             'id': message.id,
             'content': message.content,
             'message_type': message.message_type,
             'file_url': message.file_url,
             'is_read': message.is_read,
+            'reply_to': reply_to_data,
             'sender': {
                 'id': message.sender.id,
                 'username': message.sender.username,
@@ -1521,4 +1689,407 @@ def delete_message(request, conversation_id, message_id):
         })
     except Exception as e:
         print(f"Delete message error: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_followers(request):
+    """Dohvaćanje korisnika koji prate trenutnog korisnika."""
+    try:
+        user = request.user
+        
+        # Dohvati sve UserFollow objekte gdje je current_user follower
+        followers_relations = UserFollow.objects.filter(following=user).select_related('follower')
+        
+        followers_data = []
+        for relation in followers_relations:
+            follower = relation.follower
+            profile_image_url = request.build_absolute_uri(follower.profile_image.url) if follower.profile_image else None
+            
+            followers_data.append({
+                'id': follower.id,
+                'username': follower.username,
+                'full_name': follower.full_name,
+                'profile_image_url': profile_image_url,
+                'is_verified': follower.is_verified,
+                'followed_at': relation.created_at.isoformat()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'followers': followers_data,
+            'count': len(followers_data)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_following(request):
+    """Dohvaćanje korisnika koje trenutni korisnik prati."""
+    try:
+        user = request.user
+        
+        # Dohvati sve UserFollow objekte gdje je current_user follower
+        following_relations = UserFollow.objects.filter(follower=user).select_related('following')
+        
+        following_data = []
+        for relation in following_relations:
+            following_user = relation.following
+            profile_image_url = request.build_absolute_uri(following_user.profile_image.url) if following_user.profile_image else None
+            
+            following_data.append({
+                'id': following_user.id,
+                'username': following_user.username,
+                'full_name': following_user.full_name,
+                'profile_image_url': profile_image_url,
+                'is_verified': following_user.is_verified,
+                'followed_at': relation.created_at.isoformat()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'following': following_data,
+            'count': len(following_data)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_followers_by_id(request, user_id):
+    """Dohvaćanje korisnika koji prate specifičnog korisnika."""
+    try:
+        # Dohvati sve UserFollow objekte gdje je target_user following (tko prati tog korisnika)
+        followers_relations = UserFollow.objects.filter(following_id=user_id).select_related('follower')
+        
+        # Dohvati korisnike koje je trenutni korisnik blokirao
+        blocked_users = UserBlock.objects.filter(blocker=request.user).values_list('blocked', flat=True)
+        
+        # Dohvati korisnike koji su blokirali trenutnog korisnika
+        blocked_by_users = UserBlock.objects.filter(blocked=request.user).values_list('blocker', flat=True)
+        
+        followers_data = []
+        for relation in followers_relations:
+            follower = relation.follower
+            
+            # Preskoči blokirane korisnike i korisnike koji su blokirali trenutnog korisnika
+            if follower.id in blocked_users or follower.id in blocked_by_users:
+                continue
+                
+            profile_image_url = request.build_absolute_uri(follower.profile_image.url) if follower.profile_image else None
+            
+            # Provjeri prati li trenutni korisnik ovog follower-a
+            current_user_follows_follower = UserFollow.objects.filter(
+                follower=request.user,
+                following=follower
+            ).exists()
+            
+            followers_data.append({
+                'id': follower.id,
+                'username': follower.username,
+                'full_name': follower.full_name,
+                'profile_image_url': profile_image_url,
+                'is_verified': follower.is_verified,
+                'is_following': current_user_follows_follower,
+                'followed_at': relation.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'followers': followers_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_following_by_id(request, user_id):
+    """Dohvaćanje korisnika koje prati specifični korisnik."""
+    try:
+        # Dohvati sve UserFollow objekte gdje je target_user follower (koga taj korisnik prati)
+        following_relations = UserFollow.objects.filter(follower_id=user_id).select_related('following')
+        
+        # Dohvati korisnike koje je trenutni korisnik blokirao
+        blocked_users = UserBlock.objects.filter(blocker=request.user).values_list('blocked', flat=True)
+        
+        # Dohvati korisnike koji su blokirali trenutnog korisnika
+        blocked_by_users = UserBlock.objects.filter(blocked=request.user).values_list('blocker', flat=True)
+        
+        following_data = []
+        for relation in following_relations:
+            following_user = relation.following
+            
+            # Preskoči blokirane korisnike i korisnike koji su blokirali trenutnog korisnika
+            if following_user.id in blocked_users or following_user.id in blocked_by_users:
+                continue
+                
+            profile_image_url = request.build_absolute_uri(following_user.profile_image.url) if following_user.profile_image else None
+            
+            # Provjeri prati li trenutni korisnik ovog following korisnika
+            current_user_follows_following = UserFollow.objects.filter(
+                follower=request.user,
+                following=following_user
+            ).exists()
+            
+            following_data.append({
+                'id': following_user.id,
+                'username': following_user.username,
+                'full_name': following_user.full_name,
+                'profile_image_url': profile_image_url,
+                'is_verified': following_user.is_verified,
+                'is_following': current_user_follows_following,
+                'followed_at': relation.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'following': following_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def remove_follower(request, follower_id):
+    """Uklanjanje follow-a od korisnika prema trenutnom korisniku."""
+    try:
+        current_user = request.user
+        
+        # Pronađi UserFollow objekt gdje je follower_id follower, a current_user following
+        follow_relation = UserFollow.objects.filter(
+            follower_id=follower_id,
+            following=current_user
+        ).first()
+        
+        if not follow_relation:
+            return JsonResponse({
+                'success': False,
+                'error': 'Follow relacija nije pronađena'
+            }, status=404)
+        
+        # Obriši follow relaciju
+        follow_relation.delete()
+        
+        # Ažuriraj broj followers-a za trenutnog korisnika
+        current_user.followers = UserFollow.objects.filter(following=current_user).count()
+        current_user.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Follower uspješno uklonjen'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def search_user_followers(request):
+    """Pretraživanje followers-a po username ili full_name."""
+    try:
+        user = request.user
+        search_term = request.GET.get('q', '').strip()
+        
+        if not search_term:
+            return JsonResponse({
+                'success': True,
+                'followers': [],
+                'count': 0
+            })
+        
+        # Dohvati sve UserFollow objekte gdje je current_user follower
+        followers_relations = UserFollow.objects.filter(following=user).select_related('follower')
+        
+        # Filtriraj po username ili full_name
+        filtered_relations = followers_relations.filter(
+            models.Q(follower__username__icontains=search_term) |
+            models.Q(follower__full_name__icontains=search_term)
+        )
+        
+        followers_data = []
+        for relation in filtered_relations:
+            follower = relation.follower
+            profile_image_url = request.build_absolute_uri(follower.profile_image.url) if follower.profile_image else None
+            
+            followers_data.append({
+                'id': follower.id,
+                'username': follower.username,
+                'full_name': follower.full_name,
+                'profile_image_url': profile_image_url,
+                'is_verified': follower.is_verified,
+                'followed_at': relation.created_at.isoformat()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'followers': followers_data,
+            'count': len(followers_data)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+@api_view(["POST"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def block_user(request, user_id):
+    """Blokiraj određenog korisnika."""
+    try:
+        target_user = User.objects.get(id=user_id)
+
+        if target_user == request.user:
+            return JsonResponse({
+                "success": False,
+                "error": "Ne možeš blokirati sam sebe."
+            }, status=400)
+
+        # Ako već postoji blok, ne dupliciraj
+        block, created = UserBlock.objects.get_or_create(
+            blocker=request.user,
+            blocked=target_user
+        )
+
+        if not created:
+            return JsonResponse({
+                "success": False,
+                "message": "Korisnik je već blokiran."
+            }, status=200)
+        
+        # Ukloni follow veze u oba smjera i ažuriraj brojače
+        # Provjeri da li je trenutni korisnik pratio target korisnika
+        current_user_followed_target = UserFollow.objects.filter(follower=request.user, following=target_user).exists()
+        # Provjeri da li je target korisnik pratio trenutnog korisnika
+        target_followed_current_user = UserFollow.objects.filter(follower=target_user, following=request.user).exists()
+        
+        # Ukloni follow veze
+        UserFollow.objects.filter(follower=request.user, following=target_user).delete()
+        UserFollow.objects.filter(follower=target_user, following=request.user).delete()
+        
+        # Ažuriraj brojače
+        if current_user_followed_target:
+            # Trenutni korisnik je pratio target korisnika - smanji following za trenutnog korisnika
+            request.user.following = max(0, request.user.following - 1)
+            request.user.save()
+            # Smanji followers za target korisnika
+            target_user.followers = max(0, target_user.followers - 1)
+            target_user.save()
+            
+        if target_followed_current_user:
+            # Target korisnik je pratio trenutnog korisnika - smanji following za target korisnika
+            target_user.following = max(0, target_user.following - 1)
+            target_user.save()
+            # Smanji followers za trenutnog korisnika
+            request.user.followers = max(0, request.user.followers - 1)
+            request.user.save()
+
+        return JsonResponse({
+            "success": True,
+            "message": f"Blokirao si korisnika {target_user.username}.",
+            "blocked_user": {
+                "id": target_user.id,
+                "username": target_user.username,
+                "full_name": target_user.full_name,
+            }
+        })
+
+    except User.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "error": "Korisnik ne postoji."
+        }, status=404)
+
+
+@api_view(["POST"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def unblock_user(request, user_id):
+    """Odblokiraj određenog korisnika."""
+    try:
+        target_user = User.objects.get(id=user_id)
+        deleted, _ = UserBlock.objects.filter(
+            blocker=request.user,
+            blocked=target_user
+        ).delete()
+
+        if deleted:
+            return JsonResponse({
+                "success": True,
+                "message": f"Odblokirao si korisnika {target_user.username}."
+            })
+        else:
+            return JsonResponse({
+                "success": False,
+                "message": "Taj korisnik nije bio blokiran."
+            }, status=400)
+
+    except User.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "error": "Korisnik ne postoji."
+        }, status=404)
+
+
+@api_view(["GET"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_blocked_users(request):
+    """Dohvati listu korisnika koje je trenutni user blokirao."""
+    blocks = UserBlock.objects.filter(blocker=request.user).select_related("blocked")
+
+    blocked_list = []
+    for block in blocks:
+        blocked_user = block.blocked
+        profile_image_url = (
+            request.build_absolute_uri(blocked_user.profile_image.url)
+            if blocked_user.profile_image
+            else None
+        )
+        blocked_list.append({
+            "id": blocked_user.id,
+            "username": blocked_user.username,
+            "full_name": blocked_user.full_name,
+            "profile_image_url": profile_image_url,
+            "blocked_at": block.created_at.isoformat(),
+        })
+
+    return JsonResponse({
+        "success": True,
+        "blocked_users": blocked_list
+    })
+
+
+@api_view(["GET"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def check_user_blocked(request, user_id):
+    """Check if current user has blocked the specified user"""
+    try:
+        # Check if user is blocked
+        is_blocked = UserBlock.objects.filter(blocker=request.user, blocked_id=user_id).exists()
+        
+        return JsonResponse({
+            'success': True,
+            'is_blocked': is_blocked
+        })
+        
+    except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

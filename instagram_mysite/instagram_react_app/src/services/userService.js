@@ -443,3 +443,82 @@ export const getFollowingUsers = async () => {
   return response.json();
 };
 
+export const updateBioGender = async (bio, gender) => {
+  const response = await fetch(`${API_URL}/update-bio-gender/`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ bio, gender }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Greška pri ažuriranju bio i gender. Status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const getUserFollowers = async () => {
+  const response = await fetch(`${API_URL}/user/followers/`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Greška pri dohvaćanju followers-a. Status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const getUserFollowing = async () => {
+  const response = await fetch(`${API_URL}/user/following/`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Greška pri dohvaćanju following-a. Status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const getUserFollowersById = async (userId) => {
+  const response = await fetch(`${API_URL}/user/${userId}/followers/`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Greška pri dohvaćanju followers-a. Status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const getUserFollowingById = async (userId) => {
+  const response = await fetch(`${API_URL}/user/${userId}/following/`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Greška pri dohvaćanju following-a. Status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+export const removeFollower = async (followerId) => {
+  const response = await fetch(`${API_URL}/user/followers/${followerId}/remove/`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Greška pri uklanjanju follower-a. Status: ${response.status}`);
+  }
+
+  return response.json();
+};
+

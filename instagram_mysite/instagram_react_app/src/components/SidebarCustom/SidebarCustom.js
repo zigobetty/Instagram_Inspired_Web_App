@@ -53,6 +53,7 @@ import {
   searchUsers,
 } from "../../services/userService";
 import CreatePostDialog from "./CreatePostDialog/CreatePostDialog";
+import { getConversations } from "../../services/chatService";
 
 const SidebarCustom = ({ onHide, onImageUploaded }) => {
   const toast = useRef(null);
@@ -83,6 +84,20 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
   const location = useLocation();
 
   const [showSearchContainer, setShowSearchContainer] = useState(false);
+  
+  // State za praćenje nepročitanih poruka
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [isFetchingUnread, setIsFetchingUnread] = useState(false);
+  const hasInitialized = useRef(false);
+  
+  // WebSocket refs
+  const wsRef = useRef(null);
+  const reconnectRef = useRef({ tries: 0, timer: null });
+  
+  // Throttling refs za fetchUnreadMessagesCount
+  const inFlightRef = useRef(false);
+  const lastFetchAtRef = useRef(0);
+  const MIN_INTERVAL = 1200; // ms – 1.2s spacing između poziva
 
   const handleLogout = async () => {
     try {
@@ -97,6 +112,161 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
       console.error("Greška prilikom odjave:", err);
     }
   };
+
+  // Funkcija za dohvaćanje ukupnog broja nepročitanih poruka
+  const fetchUnreadMessagesCount = useCallback(async () => {
+    console.count("fetchUnreadMessagesCount called");
+    
+    // spriječi overlape i spam
+    if (inFlightRef.current) return;
+    const now = Date.now();
+    if (now - lastFetchAtRef.current < MIN_INTERVAL) return;
+
+    inFlightRef.current = true;
+    lastFetchAtRef.current = now;
+
+    try {
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!currentUser.id) return;
+
+      const conversations = await getConversations();
+      if (conversations.success) {
+        const totalUnread = conversations.conversations.reduce(
+          (total, conv) => total + (conv.unread_count || 0),
+          0
+        );
+        setUnreadMessagesCount(totalUnread);
+      }
+    } catch (error) {
+      console.error("Greška prilikom dohvaćanja nepročitanih poruka:", error);
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, []);
+
+  // WebSocket konekcija s auto-reconnect funkcionalnosti
+  const connectWS = useCallback(() => {
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!currentUser.id) return;
+
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+
+    // Ispravna WebSocket URL logika
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsHost = window.location.hostname === "localhost"
+      ? "localhost:8000"            // dev: backend na :8000
+      : window.location.host;        // prod: isti origin
+
+    const wsUrl = `${wsScheme}://${wsHost}/ws/chat-notifications/?token=${token}`;
+    console.log("Povezujem se na WebSocket:", wsUrl);
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("WS: opened");
+      reconnectRef.current.tries = 0;
+      fetchUnreadMessagesCount(); // povuci stanje odmah nakon spajanja
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const t = data.type || data.event || data.action;
+
+        const allowed = new Set([
+          "conversation_updated",
+          "conversation_created",
+          "message_created",
+          "message_received",
+          "unread_count_changed",
+        ]);
+
+        if (!allowed.has(t)) return;
+
+        // Ako sam u chatu, odmah resetiraj broj na 0 i ne pozivaj fetch
+        if (location.pathname.includes("/conversation/")) {
+          setUnreadMessagesCount(0);
+        } else {
+          // Ako sam na bilo kojoj drugoj stranici, ažuriraj broj u real-time
+          fetchUnreadMessagesCount();
+        }
+      } catch (e) {
+        console.error("WS parse error:", e);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("WS error:", err);
+    };
+
+    ws.onclose = () => {
+      console.log("WS: closed");
+      const tries = ++reconnectRef.current.tries;
+      const delay = Math.min(30000, 1000 * 2 ** tries); // exponential backoff do 30s
+      console.log(`WS: reconnecting in ${delay}ms (attempt ${tries})`);
+      clearTimeout(reconnectRef.current.timer);
+      reconnectRef.current.timer = setTimeout(connectWS, delay);
+    };
+  }, []);
+
+  // Funkcija za markiranje svih poruka kao pročitane
+  const markAsReadAll = useCallback(async () => {
+    try {
+      // TODO: Implementirati backend endpoint za markiranje svih poruka kao pročitane
+      // const response = await markAllMessagesAsRead();
+      // if (response.success) {
+      //   setUnreadMessagesCount(0);
+      // }
+      console.log("Markiranje svih poruka kao pročitane");
+    } catch (error) {
+      console.error("Greška prilikom markiranja poruka kao pročitane:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    connectWS();
+    return () => {
+      clearTimeout(reconnectRef.current.timer);
+      wsRef.current?.close();
+    };
+  }, [connectWS]);
+
+  // Uklanjam visibility change handler jer uzrokuje dodatne pozive
+
+  // Popravi efekt koji reagira na promjenu rute
+  useEffect(() => {
+    const onMessages = isActive("/home/messages");
+
+    // sinkroniziraj overlay s rutom (bez dodatne ovisnosti)
+    if (showMessagesOverlay !== onMessages) {
+      setShowMessagesOverlay(onMessages);
+    }
+
+    if (!onMessages) {
+      fetchUnreadMessagesCount(); // refresh kad napuštaš Messages
+    } else {
+      setUnreadMessagesCount(0); // lokalno nuliraj badge dok si na Messages
+      markAsReadAll();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, markAsReadAll]); // samo ruta kao ovisnost
+
+  // Uklanjam periodično ažuriranje jer uzrokuje beskonacne petlje
+
+  // Dohvati početni broj nepročitanih poruka samo jednom pri mount-anju
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    if (currentUser.id && !hasInitialized.current) {
+      hasInitialized.current = true;
+      // Dodaj delay da izbjegneš konflikte s drugim useEffect-ovima
+      setTimeout(() => {
+        fetchUnreadMessagesCount();
+      }, 500);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Prazan dependency array - pokreće se samo jednom
 
   // Custom hook za mobile detection
   const useIsMobile = () => {
@@ -114,10 +284,15 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
 
   // Provjeri je li trenutna ruta Messages stranica
   const isMessagesPage = () => {
-    return location.pathname === "/home/messages";
+    return location.pathname === "/home/messages" || location.pathname.includes("/home/messages/conversation/");
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === "/home/messages") {
+      return location.pathname === "/home/messages" || location.pathname.includes("/home/messages/conversation/");
+    }
+    return location.pathname === path;
+  };
 
   const handleCreateClick = useCallback(() => {
     // Ako smo na Messages stranici, ne zatvaraj Messages overlay
@@ -244,16 +419,7 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
     };
   }, [showSearchOverlay]);
 
-  // Zatvaranje Messages overlay-a kada se promijeni ruta
-  useEffect(() => {
-    if (showMessagesOverlay && !isActive("/home/messages")) {
-      setShowMessagesOverlay(false);
-    }
-    // Ako smo na Messages stranici, osiguraj da je Messages overlay aktivan
-    if (isActive("/home/messages") && !showMessagesOverlay) {
-      setShowMessagesOverlay(true);
-    }
-  }, [location.pathname, showMessagesOverlay]);
+    // Uklanjam stari useEffect koji je uzrokovao probleme
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -387,18 +553,80 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
       });
     }, [storageKey]);
 
-    // Ažuriraj recent searches kada se korisnik promijeni
-    useEffect(() => {
+    const refresh = useCallback(() => {
       const saved = localStorage.getItem(storageKey);
       setRecent(saved ? JSON.parse(saved) : []);
-    }, [userId, storageKey]);
+    }, [storageKey]);
 
-    return { recent, add, remove, clear };
+    // Ažuriraj recent searches kada se korisnik promijeni
+    useEffect(() => {
+      refresh();
+    }, [userId, refresh]);
+
+    return { recent, add, remove, clear, refresh };
   };
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = currentUser.id;
-  const { recent: recentSearches, add: addToRecent, remove: removeFromRecent, clear: clearRecentSearches } = useRecentSearches(userId);
+  const { recent: recentSearches, add: addToRecent, remove: removeFromRecent, clear: clearRecentSearches, refresh: refreshRecentSearches } = useRecentSearches(userId);
+
+  // Funkcija za ažuriranje follow statusa u recent searches
+  const updateRecentSearchesFollowStatus = useCallback(async () => {
+    const storageKey = `recentSearches_${userId}`;
+    const currentRecentSearches = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    if (currentRecentSearches.length === 0) return;
+    
+    try {
+      // Dohvati najnovije podatke za sve recent searches
+      const updatedSearches = await Promise.all(
+        currentRecentSearches.map(async (user) => {
+          try {
+            const data = await searchUsers(user.username);
+            if (data.success && data.users.length > 0) {
+              const updatedUser = data.users.find(u => u.id === user.id);
+              return updatedUser || user;
+            }
+            return user;
+          } catch (error) {
+            console.error("Greška pri ažuriranju follow statusa:", error);
+            return user;
+          }
+        })
+      );
+      
+      // Ažuriraj localStorage s novim podacima
+      localStorage.setItem(storageKey, JSON.stringify(updatedSearches));
+      
+      // Refresh recent searches state
+      refreshRecentSearches();
+    } catch (error) {
+      console.error("Greška pri ažuriranju recent searches:", error);
+    }
+  }, [userId, refreshRecentSearches]);
+
+  // Ažuriraj follow status samo jednom kada se komponenta učita
+  useEffect(() => {
+    const hasUpdated = localStorage.getItem(`recentSearchesUpdated_${userId}`);
+    if (!hasUpdated) {
+      updateRecentSearchesFollowStatus();
+      localStorage.setItem(`recentSearchesUpdated_${userId}`, 'true');
+    }
+  }, [userId, updateRecentSearchesFollowStatus]);
+
+  // Ažuriraj follow status u recent searches kada se dogodi promjena
+  useEffect(() => {
+    const handleFollowStatusChange = () => {
+      updateRecentSearchesFollowStatus();
+    };
+
+    // Slušaj custom event za promjenu follow statusa
+    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    };
+  }, [updateRecentSearchesFollowStatus]);
 
   return (
     <>
@@ -880,6 +1108,10 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
               onClick={() => {
                 setShowMessagesOverlay(true);
                 navigate("/home/messages");
+                // Resetiraj broj nepročitanih poruka kada korisnik otvori Messages
+                setUnreadMessagesCount(0);
+                // Pozovi backend endpoint za markiranje kao pročitano
+                markAsReadAll();
               }}
               style={{
                 cursor: "pointer",
@@ -895,6 +1127,7 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
                   showSearchOverlay || showMessagesOverlay
                     ? "0.5em 0"
                     : "0.7em 0 0 0",
+                position: "relative",
               }}
             >
               {isActive("/home/messages") &&
@@ -953,6 +1186,20 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
               )}
               {!showSearchOverlay && !showMessagesOverlay && (
                 <p className="sidebar-text">Messages</p>
+              )}
+              
+              {/* Badge za nepročitane poruke */}
+              {unreadMessagesCount > 0 && !location.pathname.includes("/conversation/") && (
+                <div
+                  className={`notification-badge sidebar-notification-badge ${
+                    showSearchOverlay || showMessagesOverlay ? "collapsed" : ""
+                  }`}
+                  style={{
+                    right: showSearchOverlay || showMessagesOverlay ? "-2px" : "173px",
+                  }}
+                >
+                  {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                </div>
               )}
             </div>
 
@@ -1528,10 +1775,10 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
                             margin: "0 -2em",
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#eeeeee";
+                            e.currentTarget.style.backgroundColor = "#eeeeee";
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "transparent";
+                            e.currentTarget.style.backgroundColor = "transparent";
                           }}
                           onClick={() => {
                             addToRecent(user);
@@ -1539,7 +1786,12 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
                             setIsInputFocused(false);
                             setShowSearchOverlay(false);
                             setShowMessagesOverlay(false);
-                            navigate(`/home/users/${user.id}/profile`);
+                            // Ako je korisnik pretražio sam sebe, idi na /home/profile
+                            if (user.id === currentUser.id) {
+                              navigate("/home/profile");
+                            } else {
+                              navigate(`/home/users/${user.id}/profile`);
+                            }
                           }}
                         >
                           <img
@@ -1557,11 +1809,17 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
                             }}
                           />
                           <div>
-                            <div style={{ fontWeight: 500, backgroundColor: "transparent" }}>
+                            <div style={{ fontWeight: 500 }}>
                               {user.username}
                             </div>
-                            <div style={{ color: "#888", fontSize: "0.95em" }}>
+                            <div style={{ color: "#888", fontSize: "0.95em", display: "flex", alignItems: "center", gap: "4px" }}>
                               {user.full_name}
+                              {user.is_following && (
+                                <>
+                                  <span style={{ color: "#888", fontSize: "0.95em" }}>·</span>
+                                  <span style={{ color: "#888", fontSize: "0.95em" }}>Following</span>
+                                </>
+                              )}
                             </div>
                           </div>
                           {/* X ikona za brisanje pojedinog usera */}
@@ -1634,7 +1892,12 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
                           addToRecent(user);
                           setShowSearchOverlay(false);
                           setShowMessagesOverlay(false);
-                          navigate(`/home/users/${user.id}/profile`);
+                          // Ako je korisnik pretražio sam sebe, idi na /home/profile
+                          if (user.id === currentUser.id) {
+                            navigate("/home/profile");
+                          } else {
+                            navigate(`/home/users/${user.id}/profile`);
+                          }
                         }}
                         className="list-item"
                       >
@@ -1659,8 +1922,12 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
                             {user.username}
                           </span>
 
-                          <span className="text-sm  full-name-search-text">
+                          <span className="text-sm full-name-search-text" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                             {user.full_name}
+                            <span style={{ color: "#8e8e8e", fontSize: "12px" }}>·</span>
+                            <span style={{ color: "#8e8e8e", fontSize: "12px" }}>
+                              {user.followers_count || 0} followers
+                            </span>
                           </span>
                         </div>
                       </li>
@@ -1712,8 +1979,22 @@ const SidebarCustom = ({ onHide, onImageUploaded }) => {
           <div onClick={() => togglePopover('create')}>
             <img src={createPhoto} alt="Create" />
           </div>
-          <div onClick={() => navigate("/home/messages")}>
+          <div 
+            onClick={() => {
+              navigate("/home/messages");
+              setUnreadMessagesCount(0);
+              // Pozovi backend endpoint za markiranje kao pročitano
+              markAsReadAll();
+            }}
+            style={{ position: "relative" }}
+          >
             <img src={sendPhoto} alt="Messages" />
+            {/* Badge za nepročitane poruke na mobile */}
+            {unreadMessagesCount > 0 && (
+              <div className="notification-badge mobile-notification-badge">
+                {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+              </div>
+            )}
           </div>
           <div onClick={() => navigate("/home/profile")}>
             <img

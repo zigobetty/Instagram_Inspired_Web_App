@@ -12,11 +12,13 @@ const Home = () => {
   const refreshImages = () => {
     setForceRefresh((prev) => !prev);
   };
+  const isMessagesPage = location.pathname === "/home/messages" || location.pathname.includes("/home/messages/conversation/");
+  const isAccountEditPage = location.pathname === "/home/accounts/edit";
 
   const isSidebarCollapsed = showMessagesOverlay;
-  const sidebarWidth = isSidebarCollapsed ? "5em" : "19em";
+  const sidebarWidth = isAccountEditPage ? "15em" : (isSidebarCollapsed ? "5em" : "19em");
 
-  const isMessagesPage = location.pathname === "/home/messages";
+ 
 
   return (
     <div
@@ -36,7 +38,7 @@ const Home = () => {
       <div
         className="main-app-container"
         style={{
-          paddingTop: isMessagesPage ? "0" : undefined,
+          paddingTop: isMessagesPage || isAccountEditPage ? "0" : undefined,
         }}
       >
         <Outlet context={{ refreshImages }} />

@@ -119,17 +119,23 @@ export const markMessagesAsRead = async (conversationId) => {
 };
 
 // Pošalji poruku
-export const sendMessage = async (conversationId, content) => {
+export const sendMessage = async (conversationId, content, replyToMessage = null) => {
   try {
+    const requestBody = {
+      content: content
+    };
+    
+    if (replyToMessage) {
+      requestBody.reply_to = replyToMessage.id;
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/send-message/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        content: content
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (response.ok) {
@@ -186,6 +192,77 @@ export const deleteMessage = async (conversationId, messageId) => {
     }
   } catch (error) {
     console.error('Error deleting message:', error);
+    throw error;
+  }
+};
+
+// Block user
+export const blockUser = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/block-user/${userId}/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to block user');
+    }
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    throw error;
+  }
+};
+
+// Unblock user
+export const unblockUser = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/unblock-user/${userId}/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to unblock user');
+    }
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    throw error;
+  }
+};
+
+// Get blocked users
+export const getBlockedUsers = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/blocked-users/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      throw new Error('Failed to fetch blocked users');
+    }
+  } catch (error) {
+    console.error('Error fetching blocked users:', error);
     throw error;
   }
 };

@@ -44,6 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     bio = models.TextField(blank=True, null=True, max_length=150)
     website = models.URLField(blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
+    gender = models.CharField(max_length=50, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
@@ -187,6 +188,7 @@ class Message(models.Model):
     ], default='text')
     file_url = models.URLField(blank=True, null=True)
     is_read = models.BooleanField(default=False)
+    reply_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -210,4 +212,17 @@ class MessageReadStatus(models.Model):
 
     def __str__(self):
         return f"{self.user.username} read message {self.message.id} at {self.read_at}"
+
+
+class UserBlock(models.Model):
+    blocker = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_users')
+    blocked = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_by_users')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('blocker', 'blocked')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.blocker.username} blocked {self.blocked.username}"
 

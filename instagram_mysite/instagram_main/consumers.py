@@ -116,6 +116,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
         if message_type == 'chat_message':
             message = text_data_json.get('message', '').strip()
+            reply_to_id = text_data_json.get('reply_to', {}).get('id') if text_data_json.get('reply_to') else None
             
             # Validacija poruke
             if not message:
@@ -124,7 +125,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if len(message) > 5000:  # Maksimalna duljina poruke
                 return
             
-            message_id = await self.save_message(message)
+            message_id = await self.save_message(message, reply_to_id)
             
             # Pošalji poruku svim sudionicima u room-u
             await self.channel_layer.group_send(
@@ -135,7 +136,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'sender_id': self.user.id,
                     'sender_username': self.user.username,
                     'message_id': message_id,
-                    'timestamp': text_data_json.get('timestamp')
+                    'timestamp': text_data_json.get('timestamp'),
+                    'reply_to': text_data_json.get('reply_to')
                 }
             )
             
@@ -194,7 +196,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender_id': event['sender_id'],
             'sender_username': event['sender_username'],
             'message_id': event['message_id'],
-            'timestamp': event['timestamp']
+            'timestamp': event['timestamp'],
+            'reply_to': event.get('reply_to')
         }))
 
     async def user_typing(self, event):
@@ -273,12 +276,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def save_message(self, content):
+    def save_message(self, content, reply_to_id=None):
         conversation = Conversation.objects.get(id=self.conversation_id)
+        
+        # Dohvati reply_to poruku ako postoji
+        reply_to_message = None
+        if reply_to_id:
+            try:
+                reply_to_message = Message.objects.get(id=reply_to_id, conversation=conversation)
+            except Message.DoesNotExist:
+                pass
+        
         message = Message.objects.create(
             conversation=conversation,
             sender=self.user,
-            content=content
+            content=content,
+            reply_to=reply_to_message
         )
         return message.id
 

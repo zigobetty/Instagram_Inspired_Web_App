@@ -22,6 +22,7 @@ import NotificationsSidebar from "./components/NotificationsSidebar/Notification
 import ListUsers from "./components/ListUsers";
 import UserDetail from "./components/UserDetail";
 import UserProfile from "./components/UserProfile/UserProfile";
+import AccountEdit from "./components/AccountEdit/AccountEdit";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -41,33 +42,36 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/main_login" />} />{" "}
-        <Route path="/main_login" element={<Login />} />
-        <Route path="/login" element={<LogInSecond />} />
-        <Route path="/signup" element={<SignIn />} />
-        {/* PROTECTED HOME */}
-        <Route path="/home" element={<ProtectedRoute />}>
-          <Route element={<Home />}>
-            <Route index element={<HomeSidebar />} />
-            <Route path="dashboard" element={<HomeSidebar />} />
-            <Route path="search" element={<SearchSidebar />} />
-            <Route path="explore" element={<ExploreSidebar />} />
-            <Route path="reels" element={<ReelsSidebar />} />
-            <Route path="messages" element={<MessagesSidebar />} />
-            <Route path="notifications" element={<NotificationsSidebar />} />
-            <Route path="create" element={<CreateSidebar />} />
-            <Route path="profile" element={<ProfileSidebar />} />
-            <Route path="threads" element={<ThreadsSidebar />} />
-            <Route path="users/:userId/profile" element={<UserProfile />} />
-          </Route>
+    <Routes>
+      <Route path="/" element={<Navigate to="/main_login" />} />{" "}
+      <Route path="/main_login" element={<Login />} />
+      <Route path="/login" element={<LogInSecond />} />
+      <Route path="/signup" element={<SignIn />} />
+      {/* PROTECTED HOME */}
+      <Route path="/home" element={<ProtectedRoute />}>
+        <Route element={<Home />}>
+          <Route index element={<HomeSidebar />} />
+          <Route path="dashboard" element={<HomeSidebar />} />
+          <Route path="search" element={<SearchSidebar />} />
+          <Route path="explore" element={<ExploreSidebar />} />
+          <Route path="reels" element={<ReelsSidebar />} />
+          <Route path="messages" element={<MessagesSidebar />} />
+          <Route
+            path="messages/conversation/:conversationId"
+            element={<MessagesSidebar />}
+          />
+          <Route path="notifications" element={<NotificationsSidebar />} />
+          <Route path="create" element={<CreateSidebar />} />
+          <Route path="profile" element={<ProfileSidebar />} />
+          <Route path="accounts/edit" element={<AccountEdit />} />
+          <Route path="threads" element={<ThreadsSidebar />} />
+          <Route path="users/:userId/profile" element={<UserProfile />} />
         </Route>
-        <Route path="/users" element={<ListUsers />} />
-        <Route path="/users/:id" element={<UserDetail />} />
-        <Route path="*" element={<Navigate to="/main_login" />} />
-      </Routes>
-    </Router>
+      </Route>
+      <Route path="/users" element={<ListUsers />} />
+      <Route path="/users/:id" element={<UserDetail />} />
+      <Route path="*" element={<Navigate to="/main_login" />} />
+    </Routes>
   );
 }
 

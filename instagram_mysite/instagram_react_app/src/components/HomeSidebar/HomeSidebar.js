@@ -117,6 +117,10 @@ const HomeSidebar = () => {
       console.error("Greška kod dohvaćanja objava:", error);
     } finally {
       setLoading(false);
+      // Sakrij progress bar kada se loading završi
+      setTimeout(() => {
+        setShowProgressBar(false);
+      }, 100);
     }
   }, []);
 
@@ -179,9 +183,6 @@ const HomeSidebar = () => {
 
   // Dodaj useEffect za promjenu tab-a
   useEffect(() => {
-    // Preskoči prvi load jer se već poziva u prvom useEffect
-    if (posts.length === 0) return;
-
     const feedType = activeTab === "following" ? "following" : "for_you";
 
     // Provjeri da li se tip feed-a promijenio
@@ -189,6 +190,7 @@ const HomeSidebar = () => {
       // Prikaži progress bar i resetiraj stanje učitavanja slika
       setShowProgressBar(true);
       setImagesLoaded({});
+      setLoading(true);
       
       // Samo osvježavaj feed podatke, ne resetiraj cijelu komponentu
       const updateFeedOnly = async () => {
@@ -203,7 +205,7 @@ const HomeSidebar = () => {
 
           const data = await getFeedPosts(feedType);
           if (data.success) {
-            setPosts(data.posts);
+            setPosts(data.posts || []); // Osiguraj da je uvijek array
             setCurrentFeedType(feedType);
             setCurrentImageIndex({}); // Resetiraj indekse slika
 
@@ -212,7 +214,7 @@ const HomeSidebar = () => {
             const initialSaved = {};
             const initialLikesCount = {};
 
-            data.posts.forEach((post) => {
+            (data.posts || []).forEach((post) => {
               initialLiked[post.id] = post.user_liked || false;
               initialSaved[post.id] = post.user_saved || false;
               initialLikesCount[post.id] = post.likes_count || 0;
@@ -225,7 +227,7 @@ const HomeSidebar = () => {
             // Fallback: prikaži slike nakon 2 sekunde čak i ako se ne učitaju
             setTimeout(() => {
               const fallbackImagesLoaded = {};
-              data.posts.forEach(post => {
+              (data.posts || []).forEach(post => {
                 fallbackImagesLoaded[post.id] = true;
               });
               setImagesLoaded(fallbackImagesLoaded);
@@ -235,34 +237,46 @@ const HomeSidebar = () => {
           console.error("Greška kod dohvaćanja objava:", error);
         } finally {
           setLoading(false);
+          // Sakrij progress bar kada se loading završi
+          setTimeout(() => {
+            setShowProgressBar(false);
+          }, 100);
         }
       };
 
       updateFeedOnly();
     }
-  }, [activeTab]);
+  }, [activeTab, currentFeedType]);
 
   // Sakrij progress bar kada se sve slike učitaju ili nakon timeout-a
   useEffect(() => {
-    if (showProgressBar && posts.length > 0) {
-      const allImagesLoaded = posts.every(post => imagesLoaded[post.id]);
-      if (allImagesLoaded) {
+    if (showProgressBar) {
+      if (posts.length === 0) {
+        // Ako nema postova, odmah sakrij progress bar
         setTimeout(() => {
           setShowProgressBar(false);
-        }, 200); // Kratka pauza za bolji UX
+        }, 200);
       } else {
-        // Timeout za slučaj da se slike ne učitaju
-        const timeout = setTimeout(() => {
-          setShowProgressBar(false);
-          // Označi sve slike kao učitanu ako se ne učitaju u 5 sekundi
-          const timeoutImagesLoaded = {};
-          posts.forEach(post => {
-            timeoutImagesLoaded[post.id] = true;
-          });
-          setImagesLoaded(timeoutImagesLoaded);
-        }, 5000);
-        
-        return () => clearTimeout(timeout);
+        // Ako ima postova, čekaj da se sve slike učitaju
+        const allImagesLoaded = posts.every(post => imagesLoaded[post.id]);
+        if (allImagesLoaded) {
+          setTimeout(() => {
+            setShowProgressBar(false);
+          }, 200); // Kratka pauza za bolji UX
+        } else {
+          // Timeout za slučaj da se slike ne učitaju
+          const timeout = setTimeout(() => {
+            setShowProgressBar(false);
+            // Označi sve slike kao učitanu ako se ne učitaju u 5 sekundi
+            const timeoutImagesLoaded = {};
+            posts.forEach(post => {
+              timeoutImagesLoaded[post.id] = true;
+            });
+            setImagesLoaded(timeoutImagesLoaded);
+          }, 5000);
+          
+          return () => clearTimeout(timeout);
+        }
       }
     }
   }, [imagesLoaded, posts, showProgressBar]);
@@ -912,7 +926,29 @@ const HomeSidebar = () => {
 
       {/* Feed objava */}
       <div className="posts-feed">
-        {posts.map((post) => (
+        {posts.length === 0 && activeTab === "following" ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '2rem', 
+            color: '#737373',
+            fontSize: '16px'
+          }}>
+            <p>There are no posts from users you follow.</p>
+            <p style={{ fontSize: '14px', marginTop: '0.5rem' }}>
+            Start following users to see their posts here.
+            </p>
+          </div>
+        ) : posts.length === 0 && activeTab === "forYou" ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '2rem', 
+            color: '#737373',
+            fontSize: '16px'
+          }}>
+            <p>There are no posts to display.</p>
+          </div>
+        ) : (
+          posts.map((post) => (
           <div key={post.id} className="post-container">
             {/* Post header */}
             <div className="post-header">
@@ -1228,7 +1264,8 @@ const HomeSidebar = () => {
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
         </div>
         <div className="right-homeSidebar-container">
@@ -1241,9 +1278,9 @@ const HomeSidebar = () => {
                 </div>
                 <div className="current-user-details">
                   <div className="current-user-username">
-                    {currentUser?.username || "bettyzigo"}
+                    {currentUser?.username || ""}
                   </div>
-                  <div className="current-user-description">Betty Žigo</div>
+                  <div className="current-user-description"> {currentUser?.full_name || ""}</div>
                 </div>
               </div>
               <button className="switch-button">Switch</button>

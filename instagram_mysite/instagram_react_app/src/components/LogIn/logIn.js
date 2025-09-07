@@ -86,7 +86,6 @@ const Login = () => {
       password: valuePassword,
     };
 
-    console.log("Šaljem podatke na server:", data);
 
     try {
       const response = await fetch("http://localhost:8000/api/token/", {

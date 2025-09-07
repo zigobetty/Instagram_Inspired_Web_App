@@ -182,7 +182,7 @@ SESSION_COOKIE_HTTPONLY = True
 # OVo su sigurnosne postavke za sesiju
 SESSION_COOKIE_SECURE = False  
 
-SESSION_COOKIE_AGE = 3600  # Vrijeme trajanja sesije u
+SESSION_COOKIE_AGE = 3600  # Vrijeme trajanja sesije u sekundama
 SESSION_SAVE_EVERY_REQUEST = True
 
 

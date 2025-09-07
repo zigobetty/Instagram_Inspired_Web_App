@@ -61,6 +61,7 @@ const MessagesSidebar = () => {
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [replyToMessage, setReplyToMessage] = useState(null);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -206,11 +207,27 @@ const MessagesSidebar = () => {
         switch (data.type) {
           case "conversation_created":
             console.log("New conversation created:", data);
+            
+            // Normaliziraj URL slike - koristi punu URL putanju
+            const normalizeImageUrl = (url) => {
+              if (!url) return url;
+              if (url.startsWith('/media/')) {
+                return `http://localhost:8000${url}`;
+              }
+              return url;
+            };
+
             setConversations((prev) => [
               {
                 ...data.conversation,
                 isTyping: false,
                 typingUser: null,
+                other_participant: {
+                  ...data.conversation.other_participant,
+                  profile_image: normalizeImageUrl(
+                    data.conversation.other_participant?.profile_image
+                  ),
+                },
               },
               ...prev,
             ]);
@@ -224,6 +241,12 @@ const MessagesSidebar = () => {
               data.conversation?.other_participant?.profile_image
             );
             setConversations((prev) => {
+              console.log("Previous conversations:", prev.map(c => ({
+                id: c.id,
+                profile_image: c.other_participant?.profile_image,
+                username: c.other_participant?.username
+              })));
+              
               const filtered = prev.filter(
                 (conv) => conv.id !== data.conversation.id
               );
@@ -233,24 +256,42 @@ const MessagesSidebar = () => {
                 (conv) => conv.id === data.conversation.id
               );
 
+              // Normaliziraj URL slike - koristi punu URL putanju
+              const normalizeImageUrl = (url) => {
+                if (!url) return url;
+                if (url.startsWith('/media/')) {
+                  return `http://localhost:8000${url}`;
+                }
+                return url;
+              };
+
               const updatedConversation = {
                 ...data.conversation,
                 isTyping: false,
                 typingUser: null,
-                // Sačuvaj postojeći profile_image URL iz REST API-ja
+                // Koristi novu sliku ako je dostupna, inače postojeću
                 other_participant: {
                   ...data.conversation.other_participant,
-                  profile_image:
-                    existingConversation?.other_participant?.profile_image ||
-                    data.conversation.other_participant?.profile_image,
+                  profile_image: normalizeImageUrl(
+                    data.conversation.other_participant?.profile_image ||
+                    existingConversation?.other_participant?.profile_image
+                  ),
                 },
               };
+              
+              const result = [updatedConversation, ...filtered];
+              console.log("Result conversations:", result.map(c => ({
+                id: c.id,
+                profile_image: c.other_participant?.profile_image,
+                username: c.other_participant?.username
+              })));
+              
               console.log("Updated conversation:", updatedConversation);
               console.log(
-                "Keeping existing profile image URL (REST API):",
-                existingConversation?.other_participant?.profile_image
+                "Using profile image:",
+                data.conversation.other_participant?.profile_image || "fallback to existing"
               );
-              return [updatedConversation, ...filtered];
+              return result;
             });
             break;
 
@@ -390,6 +431,9 @@ const MessagesSidebar = () => {
         // Zatvori details sidebar
         setShowDetailsSidebar(false);
 
+        // Vrati rutu na messages
+        navigate("/home/messages");
+
         // Force re-render
         setForceUpdate((prev) => prev + 1);
       }
@@ -411,11 +455,30 @@ const MessagesSidebar = () => {
         }
       });
     }
+
+    // Preload header sliku ako postoji selectedConversation
+    if (selectedConversation?.other_participant?.profile_image) {
+      console.log("Preloading header image:", selectedConversation.other_participant.profile_image);
+      const headerImg = new Image();
+      headerImg.onload = () => {
+        console.log("Header image preloaded successfully:", selectedConversation.other_participant.profile_image);
+      };
+      headerImg.onerror = () => {
+        console.error("Header image preload failed:", selectedConversation.other_participant.profile_image);
+      };
+      headerImg.src = selectedConversation.other_participant.profile_image;
+    }
   }, [selectedConversation, conversations]);
 
   // Preload avatara nakon fetchanja razgovora
   useEffect(() => {
     if (conversations.length > 0) {
+      console.log("Preloading images for conversations:", conversations.map(c => ({
+        id: c.id,
+        profile_image: c?.other_participant?.profile_image,
+        username: c?.other_participant?.username
+      })));
+      
       conversations.forEach((c) => {
         const url = c?.other_participant?.profile_image;
         if (url) {
@@ -553,6 +616,13 @@ const MessagesSidebar = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Skrolaj na typing dots kada se prikazuju
+  useEffect(() => {
+    if (typingUsers.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [typingUsers]);
+
   const handleInputFocus = () => {
     setIsInputFocused(true);
   };
@@ -611,6 +681,7 @@ const MessagesSidebar = () => {
     try {
       const messagesData = await getConversationMessages(conversation.id);
       if (messagesData.success) {
+        console.log("Messages from API:", messagesData.messages);
         setMessages(messagesData.messages);
 
         // Preload profile slike za sve poruke
@@ -678,12 +749,20 @@ const MessagesSidebar = () => {
   };
 
   // Funkcija za slanje poruke
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !currentUser) return;
+  const handleSendMessage = async (messageContent = null) => {
+    const contentToSend = messageContent || newMessage.trim();
+    if (!contentToSend || !selectedConversation || !currentUser) return;
 
     // Pošalji poruku preko WebSocket-a
-    await sendMessageViaWebSocket(newMessage.trim());
-    setNewMessage("");
+    await sendMessageViaWebSocket(contentToSend);
+
+    // Očisti input samo ako nije poslana predefinirana poruka (kao srce)
+    if (!messageContent) {
+      setNewMessage("");
+    }
+
+    // Zatvori reply mod ako je aktivan
+    setReplyToMessage(null);
 
     // Zaustavi typing indikator
     sendTypingIndicator(false);
@@ -792,6 +871,24 @@ const MessagesSidebar = () => {
   const handleForward = () => {
     console.log("Forward message:", contextMenu.messageId);
     closeContextMenu();
+  };
+
+  // Funkcija za reply poruke
+  const handleReply = (messageId = null) => {
+    const targetMessageId = messageId || contextMenu.messageId;
+    console.log("handleReply called, targetMessageId:", targetMessageId);
+    const message = messages.find((m) => m.id === targetMessageId);
+    console.log("found message:", message);
+    if (message) {
+      setReplyToMessage(message);
+      console.log("Reply mode activated for message:", message);
+    }
+    closeContextMenu();
+  };
+
+  // Funkcija za zatvaranje reply moda
+  const handleCancelReply = () => {
+    setReplyToMessage(null);
   };
 
   // Funkcija za copy poruke
@@ -934,6 +1031,7 @@ const MessagesSidebar = () => {
       console.log(
         `Connecting to WebSocket: ${base}/ws/chat/${conversationId}/`
       );
+      
       const ws = new WebSocket(`${base}/ws/chat/${conversationId}/`, [
         "jwt",
         token,
@@ -966,6 +1064,7 @@ const MessagesSidebar = () => {
               },
               created_at: data.timestamp || new Date().toISOString(),
               is_read: false,
+              reply_to: data.reply_to || null,
             };
 
             setMessages((prev) => [...prev, newMessage]);
@@ -1088,10 +1187,7 @@ const MessagesSidebar = () => {
 
           case "conversation_deleted":
             console.log("Conversation deleted:", data);
-            console.log(
-              "Current selectedConversation:",
-              selectedConversation
-            );
+            console.log("Current selectedConversation:", selectedConversation);
             console.log(
               "Comparing:",
               selectedConversation?.id,
@@ -1238,6 +1334,15 @@ const MessagesSidebar = () => {
         type: "chat_message",
         message: content,
         timestamp: new Date().toISOString(),
+        reply_to: replyToMessage ? {
+          id: replyToMessage.id,
+          content: replyToMessage.content,
+          sender: {
+            id: replyToMessage.sender.id,
+            username: replyToMessage.sender.username,
+            full_name: replyToMessage.sender.full_name
+          }
+        } : null
       };
       console.log("Sending via WebSocket:", messageData);
       wsConnection.send(JSON.stringify(messageData));
@@ -1250,7 +1355,7 @@ const MessagesSidebar = () => {
           return;
         }
 
-        const messageData = await sendMessage(selectedConversation.id, content);
+        const messageData = await sendMessage(selectedConversation.id, content, replyToMessage);
         if (messageData.success) {
           console.log("Message sent via API:", messageData);
           setMessages((prevMessages) => [...prevMessages, messageData.message]);
@@ -1551,7 +1656,10 @@ const MessagesSidebar = () => {
                         <li
                           key={conversation.id}
                           className="conversation-item"
-                          onClick={() => handleSelectConversation(conversation)}
+                          onClick={() => {
+                            handleSelectConversation(conversation);
+                            navigate(`/home/messages/conversation/${conversation.id}`);
+                          }}
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -1565,6 +1673,7 @@ const MessagesSidebar = () => {
                           }}
                         >
                           <img
+                            key={`${conversation.id}-${conversation.other_participant.id}`}
                             src={
                               conversation.other_participant.profile_image &&
                               conversation.other_participant.profile_image.startsWith(
@@ -1965,6 +2074,7 @@ const MessagesSidebar = () => {
                 flexDirection: "column",
                 width: showDetailsSidebar ? "71%" : "100%",
                 transition: "width 0.3s ease",
+                justifyContent:"space-between"
               }}
             >
               {/* Chat header */}
@@ -1982,6 +2092,7 @@ const MessagesSidebar = () => {
                   style={{ display: "flex", alignItems: "center", gap: "12px" }}
                 >
                   <img
+                    key={`header-${selectedConversation.id}-${selectedConversation.other_participant.id}`}
                     src={
                       selectedConversation.other_participant.profile_image ||
                       profilePicDefault
@@ -1992,6 +2103,14 @@ const MessagesSidebar = () => {
                       height: "44px",
                       borderRadius: "50%",
                       objectFit: "cover",
+                    }}
+                    onLoad={() => {
+                      console.log("Header image loaded:", selectedConversation.other_participant.profile_image);
+                    }}
+                    onError={(e) => {
+                      console.error("Header image failed to load:", selectedConversation.other_participant.profile_image);
+                      e.target.onerror = null;
+                      e.target.src = profilePicDefault;
                     }}
                   />
                   <div>
@@ -2126,13 +2245,17 @@ const MessagesSidebar = () => {
                   display: "flex",
                   flexDirection: "column",
                   gap: "8px",
-                  maxHeight: "38em",
+                  maxHeight: replyToMessage ? "33em" : "38em",
                 }}
               >
                 {messages.length > 0 ? (
                   <>
-                    {messages.map((message) => (
-                      <div
+                                                            {messages.map((message, index) => {
+                      const nextMessage = messages[index + 1];
+                      const isNextMessageReply = nextMessage && nextMessage.reply_to;
+                      
+                      return (
+                        <div
                         key={message.id}
                         style={{
                           alignSelf:
@@ -2142,6 +2265,7 @@ const MessagesSidebar = () => {
                           maxWidth: "100%",
                           width: "100%",
                           display: "flex",
+                          justifyContent: "center",
                           flexDirection: "column",
                           alignItems:
                             message.sender.id === currentUser?.id
@@ -2153,23 +2277,73 @@ const MessagesSidebar = () => {
                           paddingRight:
                             message.sender.id === currentUser?.id ? "0" : "0",
                           minHeight: "40px",
+                          marginTop: message.reply_to ? "2.5em" : (message.content === "❤️" ? "1em" : "0"),
+                          marginBottom: message.reply_to 
+                            ? (isNextMessageReply ? "1.5em" : "2.5em") 
+                            : (message.content === "❤️" ? "1em" : "0em"),
                         }}
                         onMouseEnter={() => setHoveredMessageId(message.id)}
                         onMouseLeave={() => setHoveredMessageId(null)}
                       >
+                        {/* Reply indicator */}
+                        {message.reply_to && (
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              color: "#737373",
+                              marginBottom: "4px",
+                              marginTop: "1em",
+                              textAlign: message.sender.id === currentUser?.id ? "right" : "left",
+                            }}
+                          >
+                            {message.sender.id === currentUser?.id 
+                              ? `You replied to ${message.reply_to.sender.id === currentUser?.id ? "yourself" : message.reply_to.sender.full_name || message.reply_to.sender.username}`
+                              : `Replied to ${message.reply_to.sender.id === message.sender.id ? "themselves" : "you"}`
+                            }
+                            <div
+                              style={{
+                                backgroundColor: message.sender.id === currentUser?.id ? "#efefef" : "#3797f0",
+                                padding: "4px 8px",
+                                borderRadius: "12px",
+                                fontSize: "14px",
+                                color: message.sender.id === currentUser?.id ? "#000000" : "#ffffff",
+                                display: "block",
+                                maxWidth: "200px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                width: "fit-content",
+                                marginLeft: message.sender.id === currentUser?.id ? "auto" : "20px",
+                                marginRight: message.sender.id === currentUser?.id ? "20px" : "auto",
+                                marginBottom: "0.5em",
+                                marginTop: "0.5em",
+                              }}
+                            >
+                              {message.reply_to.content}
+                            </div>
+                          </div>
+                        )}
+
                         <div
                           style={{
                             backgroundColor:
-                              message.sender.id === currentUser?.id
+                              message.content === "❤️"
+                                ? "transparent"
+                                : message.sender.id === currentUser?.id
                                 ? "#3797f0"
                                 : "#efefef",
                             color:
-                              message.sender.id === currentUser?.id
+                              message.content === "❤️"
+                                ? "inherit"
+                                : message.sender.id === currentUser?.id
                                 ? "white"
                                 : "#000000",
-                            padding: "8px 12px",
-                            borderRadius: "18px",
-                            fontSize: "14px",
+                            padding:
+                              message.content === "❤️" ? "4px" : "8px 12px",
+                            borderRadius:
+                              message.content === "❤️" ? "0" : "18px",
+                            fontSize:
+                              message.content === "❤️" ? "50px" : "14px",
                             wordWrap: "break-word",
                             width: "fit-content",
                             maxWidth: "70%",
@@ -2191,10 +2365,14 @@ const MessagesSidebar = () => {
                                 left:
                                   message.sender.id === currentUser?.id
                                     ? "auto"
+                                    : message.content === "❤️"
+                                    ? "calc(100% + 0em)"
                                     : "calc(100% + 1em)",
                                 right:
                                   message.sender.id === currentUser?.id
-                                    ? "calc(100% + 1em)"
+                                    ? message.content === "❤️"
+                                      ? "calc(100% + 0em)"
+                                      : "calc(100% + 1em)"
                                     : "auto",
                                 display: "flex",
                                 alignItems: "center",
@@ -2281,6 +2459,7 @@ const MessagesSidebar = () => {
                                   e.currentTarget.style.backgroundColor =
                                     "transparent";
                                 }}
+                                onClick={() => handleReply(message.id)}
                               >
                                 <svg
                                   aria-label={`Reply to message from ${message.sender.username}`}
@@ -2393,7 +2572,8 @@ const MessagesSidebar = () => {
                             </div>
                           )}
                       </div>
-                    ))}
+                    );
+                  })}
 
                     {/* Typing indicator */}
                     {typingUsers.length > 0 && (
@@ -2487,6 +2667,90 @@ const MessagesSidebar = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Reply Banner */}
+              {replyToMessage && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderTop: "1px solid #f0f0f0",
+                    backgroundColor: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        color: "black",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Replying to{" "}
+                      <span style={{ fontWeight: "600" }}>
+                        {replyToMessage.sender.id === currentUser?.id
+                          ? "yourself"
+                          : replyToMessage.sender.full_name ||
+                            replyToMessage.sender.username}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#8e8e8e",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {replyToMessage.content}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCancelReply}
+                    style={{
+                      backgroundColor: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px",
+                      marginLeft: "8px",
+                    }}
+                  >
+                    <svg
+                      aria-label="Close"
+                      fill="currentColor"
+                      height="16"
+                      role="img"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      style={{ color: "#262626" }}
+                    >
+                      <title>Close</title>
+                      <polyline
+                        fill="none"
+                        points="20.643 3.357 12 12 3.353 20.647"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                      ></polyline>
+                      <line
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        x1="20.649"
+                        x2="3.354"
+                        y1="20.649"
+                        y2="3.354"
+                      ></line>
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               {/* Message input */}
               <div
                 style={{
@@ -2532,7 +2796,9 @@ const MessagesSidebar = () => {
                     placeholder="Message..."
                     value={newMessage}
                     onChange={handleInputChange}
-                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && handleSendMessage(null)
+                    }
                     style={{
                       flex: 1,
                       border: "none",
@@ -2682,6 +2948,7 @@ const MessagesSidebar = () => {
                         viewBox="0 0 24 24"
                         width="24"
                         style={{ cursor: "pointer", color: "#262626" }}
+                        onClick={() => handleSendMessage("❤️")}
                       >
                         <title>Like</title>
                         <path d="M16.792 3.904A4.989 4.989 0 0 1 21.5 9.122c0 3.072-2.652 4.959-5.197 7.222-2.512 2.243-3.865 3.469-4.303 3.752-.477-.309-2.143-1.823-4.303-3.752C5.141 14.072 2.5 12.167 2.5 9.122a4.989 4.989 0 0 1 4.708-5.218 4.21 4.21 0 0 1 3.675 1.941c.84 1.175.98 1.763 1.12 1.763s.278-.588 1.11-1.766a4.17 4.17 0 0 1 3.679-1.938m0-2a6.04 6.04 0 0 0-4.797 2.127 6.052 6.052 0 0 0-4.787-2.127A6.985 6.985 0 0 0 .5 9.122c0 3.61 2.55 5.827 5.015 7.97.283.246.569.494.853.747l1.027.918a44.998 44.998 0 0 0 3.518 3.018 2 2 0 0 0 2.174 0 45.263 45.263 0 0 0 3.626-3.115l.922-.824c.293-.26.59-.519.885-.774 2.334-2.025 4.98-4.32 4.98-7.94a6.985 6.985 0 0 0-6.708-7.218Z"></path>
@@ -2692,7 +2959,7 @@ const MessagesSidebar = () => {
                   {/* Send button - shows only when typing */}
                   {newMessage.trim() && (
                     <button
-                      onClick={handleSendMessage}
+                      onClick={() => handleSendMessage(null)}
                       style={{
                         backgroundColor: "transparent",
                         color: "#3143e3",
@@ -2844,6 +3111,7 @@ const MessagesSidebar = () => {
                   style={{ display: "flex", alignItems: "center", gap: "12px" }}
                 >
                   <img
+                    key={`details-${selectedConversation.id}-${selectedConversation.other_participant.id}`}
                     src={
                       selectedConversation.other_participant.profile_image ||
                       profilePicDefault

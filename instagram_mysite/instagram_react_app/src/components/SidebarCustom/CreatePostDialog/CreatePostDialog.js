@@ -542,12 +542,7 @@ const CreatePostDialog = ({
 
       await uploadUserImage(postData);
 
-      toast.current?.show({
-        severity: "success",
-        summary: "Post Created",
-        detail: "Slika je uspješno dodana!",
-        life: 3000,
-      });
+
 
       // Dispatch custom event za osvježavanje feed-a
       window.dispatchEvent(new CustomEvent('newPostUploaded'));

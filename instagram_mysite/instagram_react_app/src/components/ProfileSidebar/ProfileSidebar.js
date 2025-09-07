@@ -1,6 +1,6 @@
 import "../ProfileSidebar/ProfileSidebar.css";
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import "../HomeSidebar/HomeSidebar.css";
 import newStory from "../../imgs/plus.png";
 import multiPhotosIcon from "../../imgs/multi_photos.png";
@@ -40,10 +40,14 @@ import {
   followUser,
   unfollowUser,
   getUserProfileById,
+  getUserFollowers,
+  getUserFollowing,
+  removeFollower,
 } from "../../services/userService";
 import { removeProfileImage as removeProfileImageAPI } from "../../services/userService";
 
 const ProfileSidebar = () => {
+  const navigate = useNavigate();
   const toast = useRef(null);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -74,6 +78,32 @@ const ProfileSidebar = () => {
   const [likedByUsers, setLikedByUsers] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
   const [isFollowingCurrentUser, setIsFollowingCurrentUser] = useState(false);
+  const [isFollowersDialogOpen, setIsFollowersDialogOpen] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followersSearchTerm, setFollowersSearchTerm] = useState("");
+  const [filteredFollowers, setFilteredFollowers] = useState([]);
+  const [isFollowersInputFocused, setIsFollowersInputFocused] = useState(false);
+  const followersInputRef = useRef(null);
+  const [followersFollowStatus, setFollowersFollowStatus] = useState({});
+  const [removeConfirmationDialog, setRemoveConfirmationDialog] = useState({
+    visible: false,
+    follower: null,
+  });
+  
+  // Following dialog state
+  const [isFollowingDialogOpen, setIsFollowingDialogOpen] = useState(false);
+  const [following, setFollowing] = useState([]);
+  const [followingLoading, setFollowingLoading] = useState(false);
+  const [followingSearchTerm, setFollowingSearchTerm] = useState("");
+  const [filteredFollowing, setFilteredFollowing] = useState([]);
+  const [isFollowingInputFocused, setIsFollowingInputFocused] = useState(false);
+  const followingInputRef = useRef(null);
+  const [unfollowConfirmationDialog, setUnfollowConfirmationDialog] = useState({
+    visible: false,
+    user: null,
+  });
+  const [followingFollowStatus, setFollowingFollowStatus] = useState({});
 
   const { refreshImages } = useOutletContext();
   const fileInputRef = useRef(null);
@@ -111,6 +141,36 @@ const ProfileSidebar = () => {
     };
 
     fetchProfile();
+  }, []);
+
+  // Ažuriraj follow status u real-time kada se dogodi promjena
+  useEffect(() => {
+    const handleFollowStatusChange = () => {
+      // Ažuriraj follow status za trenutnog korisnika
+      const fetchUpdatedProfile = async () => {
+        try {
+          const data = await getUserProfile();
+          if (data.success) {
+            setUserData(prevData => ({
+              ...prevData,
+              following: data.data.following,
+              followers: data.data.followers
+            }));
+          }
+        } catch (error) {
+          console.error("Greška pri ažuriranju profila:", error);
+        }
+      };
+      
+      fetchUpdatedProfile();
+    };
+
+    // Slušaj custom event za promjenu follow statusa
+    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -299,32 +359,12 @@ const ProfileSidebar = () => {
           console.log("Profilna slika ažurirana:", data.profile_image_url);
           setProfileImage(`${data.profile_image_url}?t=${Date.now()}`);
 
-          toast.current.show({
-            severity: "success",
-            summary: "Profile Image Updated",
-            detail: "Profilna slika je uspješno ažurirana!",
-            life: 3000,
-          });
-
           closeDialog();
         } else {
           console.error("Greška u odgovoru servera:", data.error);
-          toast.current.show({
-            severity: "error",
-            summary: "Upload Failed",
-            detail: data.error || "Greška pri ažuriranju profilne slike.",
-            life: 3000,
-          });
         }
       } catch (error) {
         console.error("Greška pri uploadu slike:", error.message);
-        toast.current.show({
-          severity: "error",
-          summary: "Upload Failed",
-          detail:
-            "Došlo je do greške pri uploadu slike. Molimo pokušajte kasnije.",
-          life: 3000,
-        });
       }
     };
   };
@@ -344,35 +384,15 @@ const ProfileSidebar = () => {
 
         setProfileImage(profilePicDefault);
 
-        toast.current.show({
-          severity: "success",
-          summary: "Profile Image Removed",
-          detail: "Profilna slika je uspješno uklonjena!",
-          life: 3000,
-        });
-
         closeDialog();
       } else {
         console.error("Greška kod brisanja profilne slike:", data.error);
-        toast.current.show({
-          severity: "error",
-          summary: "Remove Failed",
-          detail: data.error || "Greška pri uklanjanju profilne slike.",
-          life: 3000,
-        });
       }
     } catch (error) {
       console.error(
         "Greška prilikom brisanja slike na serveru:",
         error.message
       );
-      toast.current.show({
-        severity: "error",
-        summary: "Remove Failed",
-        detail:
-          "Došlo je do greške pri uklanjanju slike. Molimo pokušajte kasnije.",
-        life: 3000,
-      });
     }
   };
 
@@ -447,6 +467,242 @@ const ProfileSidebar = () => {
   const openMoreDialog = () => setIsMoreDialogOpen(true);
   const closeMoreDialog = () => setIsMoreDialogOpen(false);
 
+  const openFollowersDialog = async () => {
+    setIsFollowersDialogOpen(true);
+    setFollowersLoading(true);
+
+    try {
+      const data = await getUserFollowers();
+      if (data.success) {
+        setFollowers(data.followers);
+        setFilteredFollowers(data.followers);
+
+        // Dohvati follow status za svakog follower-a
+        const followStatusMap = {};
+        for (const follower of data.followers) {
+          try {
+            const userDataResponse = await getUserProfileById(follower.id);
+            if (userDataResponse.success) {
+              followStatusMap[follower.id] =
+                userDataResponse.data.is_following || false;
+            }
+          } catch (error) {
+            console.error("Greška pri provjeri follow statusa:", error);
+            followStatusMap[follower.id] = false;
+          }
+        }
+        setFollowersFollowStatus(followStatusMap);
+      } else {
+        console.error("Greška pri dohvaćanju followers-a:", data.error);
+      }
+    } catch (error) {
+      console.error("Greška pri dohvaćanju followers-a:", error);
+    } finally {
+      setFollowersLoading(false);
+    }
+  };
+
+  const closeFollowersDialog = () => {
+    setIsFollowersDialogOpen(false);
+    setFollowers([]);
+    setFilteredFollowers([]);
+    setFollowersSearchTerm("");
+    setIsFollowersInputFocused(false);
+    setFollowersFollowStatus({});
+  };
+
+  const openFollowingDialog = async () => {
+    setIsFollowingDialogOpen(true);
+    setFollowingLoading(true);
+
+    try {
+      const data = await getUserFollowing();
+      if (data.success) {
+        setFollowing(data.following);
+        setFilteredFollowing(data.following);
+
+        // Postavi sve korisnike kao "following" (true)
+        const followStatusMap = {};
+        data.following.forEach((user) => {
+          followStatusMap[user.id] = true;
+        });
+        setFollowingFollowStatus(followStatusMap);
+      } else {
+        console.error("Greška pri dohvaćanju following-a:", data.error);
+      }
+    } catch (error) {
+      console.error("Greška pri dohvaćanju following-a:", error);
+    } finally {
+      setFollowingLoading(false);
+    }
+  };
+
+  const closeFollowingDialog = () => {
+    setIsFollowingDialogOpen(false);
+    setFollowing([]);
+    setFilteredFollowing([]);
+    setFollowingSearchTerm("");
+    setIsFollowingInputFocused(false);
+    setFollowingFollowStatus({});
+  };
+
+  // Search logika za followers s debounce
+  useEffect(() => {
+    if (!followersSearchTerm.trim()) {
+      setFilteredFollowers(followers);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const filtered = followers.filter(
+        (follower) =>
+          follower.username
+            .toLowerCase()
+            .includes(followersSearchTerm.toLowerCase()) ||
+          follower.full_name
+            .toLowerCase()
+            .includes(followersSearchTerm.toLowerCase())
+      );
+      setFilteredFollowers(filtered);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [followersSearchTerm, followers]);
+
+  // Search logika za following s debounce
+  useEffect(() => {
+    if (!followingSearchTerm.trim()) {
+      setFilteredFollowing(following);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const filtered = following.filter(
+        (user) =>
+          user.username
+            .toLowerCase()
+            .includes(followingSearchTerm.toLowerCase()) ||
+          user.full_name
+            .toLowerCase()
+            .includes(followingSearchTerm.toLowerCase())
+      );
+      setFilteredFollowing(filtered);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [followingSearchTerm, following]);
+
+  // Follow funkcionalnost za followers
+  const handleFollowFollower = async (followerId) => {
+    try {
+      const data = await followUser(followerId);
+      if (data.success) {
+        setFollowersFollowStatus((prev) => ({
+          ...prev,
+          [followerId]: true,
+        }));
+
+        // Dispatch custom event za ažuriranje follow statusa u recent searches
+        window.dispatchEvent(new CustomEvent('followStatusChanged'));
+      } else {
+      }
+    } catch (error) {
+      console.error("Greška pri prati korisnika:", error);
+    }
+  };
+
+  // Remove funkcionalnost za followers
+  const handleRemoveFollower = async (followerId) => {
+    try {
+      const data = await removeFollower(followerId);
+      if (data.success) {
+        // Označi follower-a kao removed umjesto uklanjanja iz liste
+        setFollowers((prev) =>
+          prev.map((f) =>
+            f.id === followerId ? { ...f, is_removed: true } : f
+          )
+        );
+        setFilteredFollowers((prev) =>
+          prev.map((f) =>
+            f.id === followerId ? { ...f, is_removed: true } : f
+          )
+        );
+
+        // Ažuriraj broj followers-a u userData
+        setUserData((prev) => ({
+          ...prev,
+          followers: prev.followers - 1,
+        }));
+
+        // Zatvori confirmation dialog
+        setRemoveConfirmationDialog({ visible: false, follower: null });
+
+        // Dispatch custom event za ažuriranje follow statusa u recent searches
+        window.dispatchEvent(new CustomEvent('followStatusChanged'));
+      } else {
+      }
+    } catch (error) {
+      console.error("Greška pri uklanjanju follower-a:", error);
+    }
+  };
+
+  // Unfollow funkcionalnost za following
+  const handleUnfollowUser = async (userId) => {
+    try {
+      const data = await unfollowUser(userId);
+      if (data.success) {
+        // Promijeni status korisnika s "following" na "not following"
+        setFollowingFollowStatus((prev) => ({
+          ...prev,
+          [userId]: false,
+        }));
+
+        // Ažuriraj broj following-a u userData
+        setUserData((prev) => ({
+          ...prev,
+          following: prev.following - 1,
+        }));
+
+        // Zatvori confirmation dialog
+        setUnfollowConfirmationDialog({ visible: false, user: null });
+
+        // Dispatch custom event za ažuriranje follow statusa u recent searches
+        window.dispatchEvent(new CustomEvent('followStatusChanged'));
+      } else {
+        console.error("Greška pri unfollow korisnika:", data.error);
+      }
+    } catch (error) {
+      console.error("Greška pri unfollow korisnika:", error);
+    }
+  };
+
+  // Follow funkcionalnost za following
+  const handleFollowUser = async (userId) => {
+    try {
+      const data = await followUser(userId);
+      if (data.success) {
+        // Promijeni status korisnika s "not following" na "following"
+        setFollowingFollowStatus((prev) => ({
+          ...prev,
+          [userId]: true,
+        }));
+
+        // Ažuriraj broj following-a u userData
+        setUserData((prev) => ({
+          ...prev,
+          following: prev.following + 1,
+        }));
+
+        // Dispatch custom event za ažuriranje follow statusa u recent searches
+        window.dispatchEvent(new CustomEvent('followStatusChanged'));
+      } else {
+        console.error("Greška pri follow korisnika:", data.error);
+      }
+    } catch (error) {
+      console.error("Greška pri follow korisnika:", error);
+    }
+  };
+
   const handleFollow = async () => {
     try {
       const currentSavedPost = savedPosts.find(
@@ -467,36 +723,12 @@ const ProfileSidebar = () => {
             : prevData.following + 1,
         }));
 
-        if (toast.current) {
-          toast.current.show({
-            severity: "success",
-            summary: isFollowingCurrentUser ? "Unfollowed" : "Followed",
-            detail: isFollowingCurrentUser
-              ? "Uspješno otpratili korisnika!"
-              : "Uspješno zapratili korisnika!",
-            life: 3000,
-          });
-        }
+        // Dispatch custom event za ažuriranje follow statusa u recent searches
+        window.dispatchEvent(new CustomEvent('followStatusChanged'));
       } else {
-        if (toast.current) {
-          toast.current.show({
-            severity: "error",
-            summary: "Error",
-            detail: data.error || "Greška pri prati korisnika.",
-            life: 3000,
-          });
-        }
       }
     } catch (error) {
       console.error("Greška pri prati korisnika:", error);
-      if (toast.current) {
-        toast.current.show({
-          severity: "error",
-          summary: "Error",
-          detail: "Došlo je do greške pri prati korisnika.",
-          life: 3000,
-        });
-      }
     }
   };
 
@@ -516,37 +748,17 @@ const ProfileSidebar = () => {
           prevImages.filter((img) => img.id !== selectedImageId)
         );
 
-        toast.current.show({
-          severity: "success",
-          summary: "Image Deleted",
-          detail: "Slika je uspješno obrisana!",
-          life: 3000,
-        });
-
         setIsImageDialogOpen(false);
         setIsMoreDialogOpen(false);
         setSelectedImageId(null);
       } else {
         console.error("Greška pri brisanju slike:", data.error);
-        toast.current.show({
-          severity: "error",
-          summary: "Delete Failed",
-          detail: data.error || "Greška pri brisanju slike.",
-          life: 3000,
-        });
       }
     } catch (error) {
       console.error(
         "Greška prilikom slanja zahtjeva za brisanje slike:",
         error
       );
-      toast.current.show({
-        severity: "error",
-        summary: "Delete Failed",
-        detail:
-          "Došlo je do greške pri brisanju slike. Molimo pokušajte kasnije.",
-        life: 3000,
-      });
     }
   };
 
@@ -562,7 +774,7 @@ const ProfileSidebar = () => {
             id: data.comment_id,
             user: userData.username,
             text: newComment,
-            created_at: data.created_at, 
+            created_at: data.created_at,
             likes_count: 0,
             user_liked: false,
             user_profile_image: profileImage || profilePicDefault,
@@ -705,7 +917,11 @@ const ProfileSidebar = () => {
               <p className="username-profile-text">
                 {loading ? "Loading..." : userData?.username || "Unknown User"}
               </p>
-              <Button className="editProfile-button" label="Edit Profile" />
+              <Button
+                className="editProfile-button"
+                label="Edit Profile"
+                onClick={() => navigate("/home/accounts/edit")}
+              />
               <Button className="editProfile-button2" label="View archive" />
               <div className="tooltip-container">
                 <svg
@@ -741,13 +957,28 @@ const ProfileSidebar = () => {
             </div>
             <div className="right-inner-middle-container">
               <p className="middle-profile-text">
-                <strong>{userImages.length}</strong> posts
+                <strong style={{ color: "black" }}>{userImages.length}</strong>{" "}
+                posts
               </p>
-              <p className="middle-profile-text">
-                <strong>{userData?.followers ?? 0}</strong> followers
+              <p
+                className="middle-profile-text"
+                onClick={openFollowersDialog}
+                style={{ cursor: "pointer" }}
+              >
+                <strong style={{ color: "black" }}>
+                  {userData?.followers ?? 0}
+                </strong>{" "}
+                followers
               </p>
-              <p className="middle-profile-text">
-                <strong>{userData?.following ?? 0}</strong> following
+              <p
+                className="middle-profile-text"
+                onClick={openFollowingDialog}
+                style={{ cursor: "pointer" }}
+              >
+                <strong style={{ color: "black" }}>
+                  {userData?.following ?? 0}
+                </strong>{" "}
+                following
               </p>
             </div>
 
@@ -756,7 +987,7 @@ const ProfileSidebar = () => {
                 <strong>{userData?.full_name || "Loading..."}</strong>
               </p>
               {userData?.bio && (
-                <p className="bottom-profile-text">{userData.bio}</p>
+                <p className="bottom-profile-text bio-text">{userData.bio}</p>
               )}
             </div>
           </div>
@@ -913,52 +1144,68 @@ const ProfileSidebar = () => {
                 >
                   {savedPosts.length > 0 ? (
                     <>
-                      <div style={{
-                        textAlign: "left",
-                        paddingLeft: "2em",
-                        paddingTop: "2em",
-                        paddingBottom: "1em",
-                        display:"flex",
-                        justifyContent:"space-between",
-                        alignItems:"center",
-                        width:"90%"
-                      }}>
-                        <p style={{
-                          fontSize: "12px",
-                          color: "#737373",
-                          margin: 0
-                        }}>
+                      <div
+                        style={{
+                          textAlign: "left",
+                          paddingLeft: "2em",
+                          paddingTop: "2em",
+                          paddingBottom: "1em",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "90%",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            color: "#737373",
+                            margin: 0,
+                          }}
+                        >
                           Only you can see what you've saved
                         </p>
-                        <p style={{color:"#3143e3", fontSize:"14px", fontWeight:"500"}}>+ New Collection</p>
+                        <p
+                          style={{
+                            color: "#3143e3",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          + New Collection
+                        </p>
                       </div>
                       <div className="user-images-container">
                         {savedPosts.map((post) => (
-                        <div
-                          key={post.id}
-                          className="user-image"
-                          onClick={() => openImageDialog(post)}
-                        >
-                          {imageLoadingStates[`saved_${post.id}`] !== false && (
-                            <div className="image-skeleton">
-                              <div className="skeleton-shimmer"></div>
-                            </div>
-                          )}
-                          <img
-                            src={post.image_url}
-                            alt="Saved Post"
-                            className="uploaded-image"
-                            style={{
-                              display:
-                                imageLoadingStates[`saved_${post.id}`] === false
-                                  ? "block"
-                                  : "none",
-                            }}
-                            onLoad={() => handleImageLoad(`saved_${post.id}`)}
-                            onError={() => handleImageError(`saved_${post.id}`)}
-                          />
-                        </div>
-                      ))}
+                          <div
+                            key={post.id}
+                            className="user-image"
+                            onClick={() => openImageDialog(post)}
+                          >
+                            {imageLoadingStates[`saved_${post.id}`] !==
+                              false && (
+                              <div className="image-skeleton">
+                                <div className="skeleton-shimmer"></div>
+                              </div>
+                            )}
+                            <img
+                              src={post.image_url}
+                              alt="Saved Post"
+                              className="uploaded-image"
+                              style={{
+                                display:
+                                  imageLoadingStates[`saved_${post.id}`] ===
+                                  false
+                                    ? "block"
+                                    : "none",
+                              }}
+                              onLoad={() => handleImageLoad(`saved_${post.id}`)}
+                              onError={() =>
+                                handleImageError(`saved_${post.id}`)
+                              }
+                            />
+                          </div>
+                        ))}
                       </div>
                     </>
                   ) : (
@@ -1020,17 +1267,11 @@ const ProfileSidebar = () => {
             </div>
 
             <div className="dialog-divider"></div>
-            <p
-              className="dialog-text-remove"
-              onClick={removeProfileImage}
-            >
+            <p className="dialog-text-remove" onClick={removeProfileImage}>
               Remove current photo
             </p>
             <div className="dialog-divider"></div>
-            <p
-              className="dialog-text-cancel"
-              onClick={closeDialog}
-            >
+            <p className="dialog-text-cancel" onClick={closeDialog}>
               Cancel
             </p>
           </div>
@@ -1803,6 +2044,780 @@ const ProfileSidebar = () => {
             <p className="comment-dialog-option" onClick={closeCommentDialog}>
               Cancel
             </p>
+          </div>
+        </Dialog>
+
+        {/* Followers Dialog */}
+        <Dialog
+          visible={isFollowersDialogOpen}
+          onHide={closeFollowersDialog}
+          className="custom-followers-dialog"
+          dismissableMask
+          style={{
+            width: "25em",
+            borderRadius: "12px",
+            maxHeight: "80vh",
+          }}
+        >
+          <div className="followers-dialog-content">
+            <div className="followers-dialog-header">
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  textAlign: "center",
+                  color: "black",
+                }}
+              >
+                Followers
+              </h3>
+              <button
+                onClick={closeFollowersDialog}
+                style={{
+                  position: "absolute",
+                  right: "16px",
+                  top: "16px",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "#737373",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              className="followers-search-container"
+              style={{ padding: "16px 16px 0 16px" }}
+            >
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  ref={followersInputRef}
+                  className="search-input"
+                  placeholder="Search"
+                  value={followersSearchTerm}
+                  onChange={(e) => setFollowersSearchTerm(e.target.value)}
+                  onFocus={() => setIsFollowersInputFocused(true)}
+                  onBlur={() => setIsFollowersInputFocused(false)}
+                  style={{
+                    width: "100%",
+                    paddingLeft: isFollowersInputFocused ? "1em" : "2em",
+                    paddingRight: "2.5em",
+                    paddingTop: "0.75em",
+                    paddingBottom: "0.75em",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    outline: "none",
+                    backgroundColor: "#f5f5f5",
+                  }}
+                />
+                {!isFollowersInputFocused && (
+                  <i
+                    className="pi pi-search"
+                    style={{
+                      position: "absolute",
+                      left: "0.5rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      color: "#aaa",
+                    }}
+                  ></i>
+                )}
+                {isFollowersInputFocused && followersSearchTerm && (
+                  <i
+                    className="pi pi-times-circle"
+                    style={{
+                      position: "absolute",
+                      right: "0.5em",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#aaa",
+                      cursor: "pointer",
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setFollowersSearchTerm("");
+                      followersInputRef.current &&
+                        followersInputRef.current.focus();
+                    }}
+                  ></i>
+                )}
+              </div>
+            </div>
+
+            <div
+              className="followers-list-container"
+              style={{
+                maxHeight: "400px",
+                overflowY: "auto",
+                marginTop: "1em",
+                padding: "0 16px 16px 16px",
+              }}
+            >
+              {followersLoading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100px",
+                  }}
+                >
+                  <div className="spinner"></div>
+                </div>
+              ) : filteredFollowers.length > 0 ? (
+                filteredFollowers.map((follower) => (
+                  <div
+                    key={follower.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "8px 0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        marginRight: "12px",
+                        flexShrink: 0,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        closeFollowersDialog();
+                        if (follower.id === userData?.id) {
+                          navigate("/home/profile");
+                        } else {
+                          navigate(`/home/users/${follower.id}/profile`);
+                        }
+                      }}
+                    >
+                      <img
+                        src={follower.profile_image_url || profilePicDefault}
+                        alt={follower.username}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </div>
+
+                                         <div style={{ flex: 1, minWidth: 0 }}>
+                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                         <p
+                           style={{
+                             margin: 0,
+                             fontSize: "14px",
+                             fontWeight: "600",
+                             color: "black",
+                             whiteSpace: "nowrap",
+                             overflow: "hidden",
+                             textOverflow: "ellipsis",
+                           }}
+                         >
+                            {follower.username}
+                          </p>
+                         
+                         {/* Točkica i Follow gumb - prikazuju se samo ako ne pratim tog korisnika */}
+                         {!followersFollowStatus[follower.id] && (
+                           <>
+                             <div 
+                               className="html-div xdj266r x14z9mp xat24cr x1lziwak xexx8yu x18d9i69 x9f619 xjbqb8w x1rg5ohu x15mokao x1ga7v0g x16uus16 xbiv7yw x11lfxj5 x135b78x x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s x1oa3qoh"
+                               style={{
+                                 color: "#8e8e8e",
+                                 fontSize: "14px",
+                                 fontWeight: "600"
+                               }}
+                             >
+                               ·
+                             </div>
+                             
+                             <button
+                               onClick={() => handleFollowFollower(follower.id)}
+                               style={{
+                                 backgroundColor: "transparent",
+                                 color: "#4150f7",
+                                 border: "none",
+                                 fontSize: "12px",
+                                 fontWeight: "600",
+                                 cursor: "pointer",
+                                 padding: 0,
+                                 margin: 0
+                               }}
+                             >
+                               Follow
+                             </button>
+                           </>
+                         )}
+                       </div>
+                       
+                       <p
+                         style={{
+                           margin: 0,
+                           fontSize: "12px",
+                           color: "#737373",
+                           whiteSpace: "nowrap",
+                           overflow: "hidden",
+                           textOverflow: "ellipsis",
+                         }}
+                       >
+                          {follower.full_name}
+                        </p>
+                      </div>
+
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {/* Remove/Removed gumb */}
+                      {follower.is_removed ? (
+                        <button
+                        style={{
+                          backgroundColor: "#f0f2f5",
+                          color: "black",
+                          border: "none",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                          padding: "9px 12px",
+                          width: "90px",
+                        }}                      
+                        >
+                          Removed
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            setRemoveConfirmationDialog({
+                              visible: true,
+                              follower: follower,
+                            })
+                          }
+                          className="remove-follower-button"
+                          style={{
+                            backgroundColor: "#f0f2f5",
+                            color: "black",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            padding: "9px 12px",
+                            width: "90px",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px 20px",
+                    color: "#8e8e8e",
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: "14px" }}>
+                    {followersSearchTerm
+                      ? "No results found."
+                      : "No followers yet."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Dialog>
+
+        {/* Remove Follower Confirmation Dialog */}
+        <Dialog
+          visible={removeConfirmationDialog.visible}
+          onHide={() =>
+            setRemoveConfirmationDialog({ visible: false, follower: null })
+          }
+          className="remove-confirmation-dialog"
+          dismissableMask
+          style={{
+            width: "35em",
+            borderRadius: "20px",
+          }}
+        >
+          <div
+            style={{
+              padding: "24px",
+              textAlign: "center",
+            }}
+          >
+            {/* Profile Picture */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <img
+                src={
+                  removeConfirmationDialog.follower?.profile_image_url ||
+                  profilePicDefault
+                }
+                alt="Profile"
+                style={{
+                  width: "90px",
+                  height: "90px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            </div>
+
+            {/* Title */}
+            <h3
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#262626",
+              }}
+            >
+              Remove follower?
+            </h3>
+
+            {/* Description */}
+            <p
+              style={{
+                margin: "0 0 24px 0",
+                fontSize: "14px",
+                color: "#8e8e8e",
+                lineHeight: "1.4",
+              }}
+            >
+              Instagram won't tell {removeConfirmationDialog.follower?.username}{" "}
+              that they were removed from your followers.
+            </p>
+
+            {/* Buttons */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <button
+                onClick={() =>
+                  handleRemoveFollower(removeConfirmationDialog.follower?.id)
+                }
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#ed4956",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  padding: "12px",
+                  borderRadius: "8px",
+                }}
+              >
+                Remove
+              </button>
+              <button
+                onClick={() =>
+                  setRemoveConfirmationDialog({
+                    visible: false,
+                    follower: null,
+                  })
+                }
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#262626",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  padding: "12px",
+                  borderRadius: "8px",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Dialog>
+
+        {/* Following Dialog */}
+        <Dialog
+          visible={isFollowingDialogOpen}
+          onHide={closeFollowingDialog}
+          className="custom-following-dialog"
+          dismissableMask
+          style={{
+            width: "25em",
+            borderRadius: "12px",
+            maxHeight: "80vh",
+          }}
+        >
+          <div className="following-dialog-content">
+            <div className="following-dialog-header">
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  textAlign: "center",
+                  color: "black",
+                }}
+              >
+                Following
+              </h3>
+              <button
+                onClick={closeFollowingDialog}
+                style={{
+                  position: "absolute",
+                  right: "16px",
+                  top: "16px",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "#737373",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              className="following-search-container"
+              style={{ padding: "16px 16px 0 16px" }}
+            >
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  ref={followingInputRef}
+                  className="search-input"
+                  placeholder="Search"
+                  value={followingSearchTerm}
+                  onChange={(e) => setFollowingSearchTerm(e.target.value)}
+                  onFocus={() => setIsFollowingInputFocused(true)}
+                  onBlur={() => setIsFollowingInputFocused(false)}
+                  style={{
+                    width: "100%",
+                    paddingLeft: isFollowingInputFocused ? "1em" : "2em",
+                    paddingRight: "2.5em",
+                    paddingTop: "0.75em",
+                    paddingBottom: "0.75em",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    outline: "none",
+                    backgroundColor: "#f5f5f5",
+                  }}
+                />
+                {!isFollowingInputFocused && (
+                  <i
+                    className="pi pi-search"
+                    style={{
+                      position: "absolute",
+                      left: "0.5rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      color: "#aaa",
+                    }}
+                  ></i>
+                )}
+                {isFollowingInputFocused && followingSearchTerm && (
+                  <i
+                    className="pi pi-times-circle"
+                    style={{
+                      position: "absolute",
+                      right: "0.5em",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#aaa",
+                      cursor: "pointer",
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setFollowingSearchTerm("");
+                      followingInputRef.current &&
+                        followingInputRef.current.focus();
+                    }}
+                  ></i>
+                )}
+              </div>
+            </div>
+
+            <div
+              className="following-list-container"
+              style={{
+                maxHeight: "400px",
+                overflowY: "auto",
+                marginTop: "1em",
+                padding: "0 16px 16px 16px",
+              }}
+            >
+              {followingLoading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100px",
+                  }}
+                >
+                  <div className="spinner"></div>
+                </div>
+              ) : filteredFollowing.length > 0 ? (
+                filteredFollowing.map((user) => (
+                  <div
+                    key={user.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "8px 0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        marginRight: "12px",
+                        flexShrink: 0,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        closeFollowingDialog();
+                        if (user.id === userData?.id) {
+                          navigate("/home/profile");
+                        } else {
+                          navigate(`/home/users/${user.id}/profile`);
+                        }
+                      }}
+                    >
+                      <img
+                        src={user.profile_image_url || profilePicDefault}
+                        alt={user.username}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          color: "black",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {user.username}
+                      </p>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "12px",
+                          color: "#737373",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {user.full_name}
+                      </p>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {followingFollowStatus[user.id] ? (
+                        <button
+                          onClick={() =>
+                            setUnfollowConfirmationDialog({
+                              visible: true,
+                              user: user,
+                            })
+                          }
+                          className="following-list-button"
+                          style={{
+                            backgroundColor: "#f0f2f5",
+                            color: "black",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            padding: "9px 12px",
+                            width: "90px",
+                          }}
+                        >
+                          Following
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleFollowUser(user.id)}
+                          style={{
+                            backgroundColor: "#4150f7",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            padding: "9px 12px",
+                            width: "90px",
+                          }}
+                        >
+                          Follow
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px 20px",
+                    color: "#8e8e8e",
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: "14px" }}>
+                    {followingSearchTerm
+                      ? "No results found."
+                      : "Not following anyone yet."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Dialog>
+
+        {/* Unfollow Confirmation Dialog */}
+        <Dialog
+          visible={unfollowConfirmationDialog.visible}
+          onHide={() =>
+            setUnfollowConfirmationDialog({ visible: false, user: null })
+          }
+          className="remove-confirmation-dialog"
+          dismissableMask
+          style={{
+            width: "35em",
+            borderRadius: "20px",
+          }}
+        >
+          <div
+            style={{
+              padding: "24px",
+              textAlign: "center",
+            }}
+          >
+            {/* Profile Picture */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <img
+                src={
+                  unfollowConfirmationDialog.user?.profile_image_url ||
+                  profilePicDefault
+                }
+                alt="Profile"
+                style={{
+                  width: "90px",
+                  height: "90px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            </div>
+
+            {/* Title */}
+            <h3
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#262626",
+              }}
+            >
+              Unfollow @{unfollowConfirmationDialog.user?.username}?
+            </h3>
+
+            {/* Description */}
+            <p
+              style={{
+                margin: "0 0 24px 0",
+                fontSize: "14px",
+                color: "#8e8e8e",
+                lineHeight: "1.4",
+              }}
+            >
+              If you change your mind, you'll have to request to follow @{unfollowConfirmationDialog.user?.username} again.
+            </p>
+
+            {/* Buttons */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <button
+                onClick={() =>
+                  handleUnfollowUser(unfollowConfirmationDialog.user?.id)
+                }
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#ed4956",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  padding: "12px",
+                  borderRadius: "8px",
+                }}
+              >
+                Unfollow
+              </button>
+              <button
+                onClick={() =>
+                  setUnfollowConfirmationDialog({
+                    visible: false,
+                    user: null,
+                  })
+                }
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#262626",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  padding: "12px",
+                  borderRadius: "8px",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </Dialog>
       </div>

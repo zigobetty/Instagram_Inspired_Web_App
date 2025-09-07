@@ -722,13 +722,13 @@ textarea.p-inputtextarea.p-inputtext.p-component.p-inputtextarea-resizable {
 }
 
 .username-search-text {
-    font-size: 1em;
+    font-size: 14px;
     font-weight: 600;
 
 }
 
 .full-name-search-text {
-    font-size: 1.1em;
+    font-size: 14px;
     color: #737373;
 
 }
@@ -739,7 +739,7 @@ textarea.p-inputtextarea.p-inputtext.p-component.p-inputtextarea-resizable {
     cursor: pointer;
     transition: background-color 0.3s;
     padding-left: 1.7em;
-    gap: 1em;
+    gap: 0.3em;
     height: 4.5em;
     margin-top: 0.5em;
 }
@@ -762,7 +762,6 @@ textarea.p-inputtextarea.p-inputtext.p-component.p-inputtextarea-resizable {
 .right-list-search-container {
     display: flex;
     flex-direction: column;
-    gap: 0.3em;
     margin-top: -0.2em;
 }
 
@@ -977,6 +976,65 @@ button.next-button:disabled {
 .more-options:hover{
     border-radius: 10px;
     background-color: #eeeeee !important; 
+}
+
+
+
+
+
+
+
+/* Badge stilovi za notifikacije */
+.notification-badge {
+    position: absolute;
+    background-color: #ed4956;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    pointer-events: none;
+    transform: translate(0, 0);
+    z-index: 10;
+}
+
+/* Badge za sidebar */
+.sidebar-notification-badge {
+    top: 5px;
+    right: 173px;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    min-width: 18px;
+}
+
+/* Badge za mobile bottom bar */
+.mobile-notification-badge {
+    top: -8px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    min-width: 16px;
+}
+
+/* Responsive badge pozicioniranje */
+@media (max-width: 768px) {
+    .sidebar-notification-badge {
+        top: -4px;
+        right: -4px;
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+        min-width: 16px;
+    }
+}
+
+/* Osiguraj da se badge ne pomiče s zoom-om */
+.notification-badge {
+    transform: translate(0, 0) !important;
+    will-change: transform;
 }
 
 
