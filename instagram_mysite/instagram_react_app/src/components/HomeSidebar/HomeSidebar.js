@@ -360,25 +360,65 @@ const HomeSidebar = () => {
 
   const handleLike = async (postId) => {
     try {
-      const isLiked = likedPosts[postId];
+      // Provjeri trenutno stanje iz posts array-a
+      const currentPost = posts.find(p => p.id === postId);
+      const actualLikedState = currentPost?.user_liked || false;
 
-      if (isLiked) {
+      if (actualLikedState) {
         await unlikePost(postId);
       } else {
         await likePost(postId);
       }
 
+      // Ažuriraj posts array
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                user_liked: !actualLikedState,
+                likes_count: actualLikedState
+                  ? Math.max(0, post.likes_count - 1)
+                  : post.likes_count + 1,
+                // Ažuriraj likers array
+                likers: actualLikedState
+                  ? (post.likers || []).filter(
+                      (liker) =>
+                        liker.username !== currentUser?.username
+                    )
+                  : [
+                      {
+                        username: currentUser?.username,
+                        created_at: new Date().toISOString(),
+                      },
+                      ...(post.likers || []),
+                    ],
+              }
+            : post
+        )
+      );
+
       setLikedPosts((prev) => ({
         ...prev,
-        [postId]: !isLiked,
+        [postId]: !actualLikedState,
       }));
 
       setLikesCount((prev) => ({
         ...prev,
-        [postId]: isLiked ? Math.max(0, prev[postId] - 1) : prev[postId] + 1,
+        [postId]: actualLikedState ? Math.max(0, prev[postId] - 1) : prev[postId] + 1,
       }));
     } catch (error) {
       console.error("Greška pri lajkanju objave:", error);
+      // Ako se dogodi greška, vrati stanje na početno
+      const currentPost = posts.find(p => p.id === postId);
+      setLikedPosts((prev) => ({
+        ...prev,
+        [postId]: currentPost?.user_liked || false,
+      }));
+      setLikesCount((prev) => ({
+        ...prev,
+        [postId]: currentPost?.likes_count || 0,
+      }));
     }
   };
 
@@ -844,10 +884,36 @@ const HomeSidebar = () => {
   };
 
   const handleDoubleClick = async (postId) => {
+    // Provjeri trenutno stanje iz posts array-a
+    const currentPost = posts.find(p => p.id === postId);
+    const actualLikedState = currentPost?.user_liked || false;
+    
     // Ako već nije lajkano, lajkaj
-    if (!likedPosts[postId]) {
+    if (!actualLikedState) {
       try {
         await likePost(postId);
+        
+        // Ažuriraj posts array
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  user_liked: true,
+                  likes_count: post.likes_count + 1,
+                  // Ažuriraj likers array
+                  likers: [
+                    {
+                      username: currentUser?.username,
+                      created_at: new Date().toISOString(),
+                    },
+                    ...(post.likers || []),
+                  ],
+                }
+              : post
+          )
+        );
+        
         setLikedPosts((prev) => ({
           ...prev,
           [postId]: true,
@@ -1706,7 +1772,11 @@ const HomeSidebar = () => {
                     alt="Fav"
                     onClick={async () => {
                       try {
-                        if (dialogLiked) {
+                        // Provjeri trenutno stanje iz posts array-a
+                        const currentPost = posts.find(p => p.id === selectedImageId);
+                        const actualLikedState = currentPost?.user_liked || false;
+                        
+                        if (actualLikedState) {
                           await unlikePost(selectedImageId);
                           setDialogLikesCount((prev) => Math.max(0, prev - 1));
                         } else {
@@ -1721,13 +1791,13 @@ const HomeSidebar = () => {
                             post.id === selectedImageId
                               ? {
                                   ...post,
-                                  user_liked: !dialogLiked,
-                                  likes_count: dialogLiked
+                                  user_liked: !actualLikedState,
+                                  likes_count: actualLikedState
                                     ? Math.max(0, post.likes_count - 1)
                                     : post.likes_count + 1,
                                   // Ažuriraj likers array
-                                  likers: dialogLiked
-                                    ? post.likers.filter(
+                                  likers: actualLikedState
+                                    ? (post.likers || []).filter(
                                         (liker) =>
                                           liker.username !==
                                           currentUser?.username
@@ -1737,14 +1807,31 @@ const HomeSidebar = () => {
                                           username: currentUser?.username,
                                           created_at: new Date().toISOString(),
                                         },
-                                        ...post.likers,
+                                        ...(post.likers || []),
                                       ],
                                 }
                               : post
                           )
                         );
+                        
+                        // Ažuriraj i lokalno stanje lajkanja
+                        setLikedPosts((prev) => ({
+                          ...prev,
+                          [selectedImageId]: !actualLikedState,
+                        }));
+                        
+                        setLikesCount((prev) => ({
+                          ...prev,
+                          [selectedImageId]: actualLikedState
+                            ? Math.max(0, prev[selectedImageId] - 1)
+                            : prev[selectedImageId] + 1,
+                        }));
                       } catch (error) {
                         console.error("Greška pri lajkanju slike:", error);
+                        // Ako se dogodi greška, vrati stanje na početno
+                        const currentPost = posts.find(p => p.id === selectedImageId);
+                        setDialogLiked(currentPost?.user_liked || false);
+                        setDialogLikesCount(currentPost?.likes_count || 0);
                       }
                     }}
                     style={{ cursor: "pointer" }}
